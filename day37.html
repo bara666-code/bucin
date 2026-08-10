@@ -245,103 +245,12 @@
       border-color: rgba(255,200,220,0.4);
     }
 
-    #upload-btn { position: fixed; top: max(24px, env(safe-area-inset-top) + 8px); right: max(16px, env(safe-area-inset-right) + 8px); z-index: 16; }
-    #music-btn { position: fixed; top: max(24px, env(safe-area-inset-top) + 8px); right: max(90px, env(safe-area-inset-right) + 82px); z-index: 16; }
-    #msg-btn { position: fixed; top: max(24px, env(safe-area-inset-top) + 8px); right: max(164px, env(safe-area-inset-right) + 156px); z-index: 16; }
-
-    @media (max-width: 520px) {
-      #msg-btn { display: none; }
-      #music-btn { right: max(90px, env(safe-area-inset-right) + 82px); }
-    }
-
-    #file-input { display: none; }
-
-    /* ========== MESSAGE PANEL ========== */
-    #msg-panel {
+    #music-btn {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.92);
-      width: min(92vw, 380px);
-      background: rgba(18, 12, 22, 0.92);
-      border: 1px solid rgba(255, 200, 220, 0.2);
-      border-radius: 16px;
-      padding: 28px 24px;
-      z-index: 25;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.35s, transform 0.35s, visibility 0.35s;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      pointer-events: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      top: max(24px, env(safe-area-inset-top) + 8px);
+      right: max(16px, env(safe-area-inset-right) + 8px);
+      z-index: 16;
     }
-
-    #msg-panel.open {
-      opacity: 1;
-      visibility: visible;
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    #msg-panel h3 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
-      font-weight: 500;
-      margin-bottom: 14px;
-      color: #f5e6f0;
-      text-align: center;
-    }
-
-    #msg-panel textarea {
-      width: 100%;
-      height: 110px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,200,220,0.18);
-      border-radius: 10px;
-      color: #e8dce8;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.9rem;
-      padding: 12px 14px;
-      resize: none;
-      outline: none;
-      line-height: 1.5;
-    }
-
-    #msg-panel textarea:focus {
-      border-color: rgba(255,200,220,0.4);
-    }
-
-    .msg-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
-      justify-content: flex-end;
-    }
-
-    .msg-actions button {
-      padding: 9px 18px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border: none;
-      transition: background 0.2s;
-    }
-
-    #msg-cancel {
-      background: transparent;
-      color: #aaa;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-
-    #msg-save {
-      background: rgba(255, 180, 200, 0.2);
-      color: #f5e6f0;
-      border: 1px solid rgba(255,200,220,0.3);
-    }
-
-    #msg-save:hover { background: rgba(255, 180, 200, 0.32); }
 
     /* ========== FLOATING MESSAGE (3D TEXT OVERLAY) ========== */
     #floating-msg {
@@ -416,14 +325,39 @@
       pointer-events: none;
       z-index: 18;
       font-size: 18px;
-      animation: heartFly 1.4s ease-out forwards;
+      animation: heartFly 1.5s ease-out forwards;
       color: #f0a0c0;
-      text-shadow: 0 0 12px rgba(255,160,190,0.6);
+      text-shadow: 0 0 14px rgba(255,160,190,0.7);
     }
 
     @keyframes heartFly {
-      0% { opacity: 1; transform: translate(0,0) scale(0.6); }
-      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1.3); }
+      0% { opacity: 1; transform: translate(0,0) scale(0.5) rotate(0deg); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1.4) rotate(25deg); }
+    }
+
+    /* Continuous CSS background hearts */
+    #bg-hearts {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .bg-heart {
+      position: absolute;
+      bottom: -40px;
+      color: rgba(255, 150, 190, 0.18);
+      font-size: 14px;
+      animation: bgHeartRise linear infinite;
+      text-shadow: 0 0 10px rgba(255,140,180,0.25);
+    }
+
+    @keyframes bgHeartRise {
+      0% { transform: translateY(0) translateX(0) scale(0.7); opacity: 0; }
+      10% { opacity: 0.35; }
+      90% { opacity: 0.2; }
+      100% { transform: translateY(-110vh) translateX(30px) scale(1.1); opacity: 0; }
     }
 
     /* Mobile tweaks */
@@ -447,7 +381,7 @@
 
   <div id="start-screen">
     <div class="start-title">Ours</div>
-    <div class="start-sub">Ruang memori 3D yang bisa kamu gerakkan dengan tangan. Geser, sentuh, dan rasakan kenangan bersama.</div>
+    <div class="start-sub">Ruang memori 3D yang dikontrol dengan jari. Tunjuk, cubit, dan rasakan kenangan bersama.</div>
     <button id="start-btn">Buka Kamera</button>
   </div>
 
@@ -460,29 +394,19 @@
       </div>
     </div>
     <div class="hint" id="hint">
-      Telapak terbuka · geser ruang &nbsp;·&nbsp; Cubit · ambil foto &nbsp;·&nbsp; Kepalkan · heart burst
+      Telunjuk · geser ruang &nbsp;·&nbsp; Cubit · ambil foto &nbsp;·&nbsp; Dua jari / kepalan · heart burst
     </div>
   </div>
 
   <div id="gesture-label">—</div>
 
-  <button class="ctrl-btn" id="msg-btn">Pesan</button>
   <button class="ctrl-btn" id="music-btn">Musik</button>
-  <button class="ctrl-btn" id="upload-btn">+ Foto</button>
-  <input type="file" id="file-input" accept="image/*" multiple />
+
+  <div id="bg-hearts"></div>
 
   <div id="floating-msg">
     <div class="msg-text" id="msg-text-content">Untukmu yang selalu ada</div>
     <div class="msg-from">— ours</div>
-  </div>
-
-  <div id="msg-panel">
-    <h3>Pesan Cinta</h3>
-    <textarea id="msg-input" placeholder="Tulis pesan yang ingin ditampilkan di tengah ruang..." maxlength="180">Untukmu yang selalu ada</textarea>
-    <div class="msg-actions">
-      <button id="msg-cancel">Batal</button>
-      <button id="msg-save">Simpan</button>
-    </div>
   </div>
 
   <div id="webcam-wrap">
@@ -498,6 +422,20 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
   <script>
+    // ===================== CUSTOMIZE (ubah di sini saja) =====================
+    // Pesan yang tampil di tengah ruang
+    const LOVE_MESSAGE = "Untukmu yang selalu ada";
+    const LOVE_FROM = "— ours";
+
+    // Daftar foto (isi dengan URL gambar atau biarkan kosong untuk placeholder)
+    // Contoh: "https://example.com/foto1.jpg" atau path lokal "./foto1.jpg"
+    const PHOTO_URLS = [
+      // "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600",
+      // "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600",
+      // null = pakai placeholder cantik
+      null, null, null, null, null, null, null, null
+    ];
+
     // ===================== CONFIG =====================
     const CONFIG = {
       maxPhotos: 10,
@@ -565,6 +503,9 @@
 
       createParticles();
       createHeartParticles();
+      createAmbientHearts();
+      createFloatingHearts3D();
+      createGlowOrbs();
       createDefaultPhotos();
 
       // Soft floor
@@ -582,73 +523,210 @@
       animate();
     }
 
+    // Soft dust / sparkle
     function createParticles() {
-      const count = window.innerWidth < 600 ? 110 : 200;
+      const count = window.innerWidth < 600 ? 140 : 260;
       const geo = new THREE.BufferGeometry();
       const pos = new Float32Array(count * 3);
       for (let i = 0; i < count; i++) {
-        pos[i*3]     = (Math.random()-0.5) * 24;
-        pos[i*3+1]   = (Math.random()-0.5) * 15;
-        pos[i*3+2]   = (Math.random()-0.5) * 20 - 1;
+        pos[i*3]     = (Math.random()-0.5) * 26;
+        pos[i*3+1]   = (Math.random()-0.5) * 16;
+        pos[i*3+2]   = (Math.random()-0.5) * 22 - 1;
       }
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       particles = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: 0xffd0e8, size: 0.032, transparent: true, opacity: 0.4,
+        color: 0xffd0e8, size: 0.034, transparent: true, opacity: 0.42,
         depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
       }));
       scene.add(particles);
     }
 
+    // Burst particles (triggered by fist)
     function createHeartParticles() {
-      const count = 40;
+      const count = 70;
       const geo = new THREE.BufferGeometry();
       const pos = new Float32Array(count * 3);
       const vel = [];
       for (let i = 0; i < count; i++) {
-        pos[i*3] = 0; pos[i*3+1] = -10; pos[i*3+2] = 0;
+        pos[i*3] = 0; pos[i*3+1] = -20; pos[i*3+2] = 0;
         vel.push({ x: 0, y: 0, z: 0, life: 0 });
       }
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       heartParticles = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: 0xff90b8, size: 0.08, transparent: true, opacity: 0.7,
+        color: 0xff80b0, size: 0.09, transparent: true, opacity: 0.8,
         depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
       }));
       heartParticles.userData.vel = vel;
       scene.add(heartParticles);
     }
 
+    // Continuous falling ambient hearts
+    let ambientHearts;
+    function createAmbientHearts() {
+      const count = window.innerWidth < 600 ? 35 : 55;
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const data = [];
+      for (let i = 0; i < count; i++) {
+        pos[i*3]   = (Math.random()-0.5) * 18;
+        pos[i*3+1] = Math.random() * 14 - 4;
+        pos[i*3+2] = (Math.random()-0.5) * 14;
+        data.push({
+          speed: 0.004 + Math.random() * 0.01,
+          sway: Math.random() * Math.PI * 2,
+          swaySpeed: 0.3 + Math.random() * 0.5,
+          baseX: pos[i*3]
+        });
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      ambientHearts = new THREE.Points(geo, new THREE.PointsMaterial({
+        color: 0xff9ac0, size: 0.07, transparent: true, opacity: 0.55,
+        depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
+      }));
+      ambientHearts.userData.data = data;
+      scene.add(ambientHearts);
+    }
+
+    // 3D heart meshes floating
+    let floatingHearts3D = [];
+    function createHeartShape() {
+      const x = 0, y = 0;
+      const shape = new THREE.Shape();
+      shape.moveTo(x + 0.25, y + 0.25);
+      shape.bezierCurveTo(x + 0.25, y + 0.25, x + 0.2, y, x, y);
+      shape.bezierCurveTo(x - 0.3, y, x - 0.3, y + 0.35, x - 0.3, y + 0.35);
+      shape.bezierCurveTo(x - 0.3, y + 0.55, x - 0.1, y + 0.77, x + 0.25, y + 0.95);
+      shape.bezierCurveTo(x + 0.6, y + 0.77, x + 0.8, y + 0.55, x + 0.8, y + 0.35);
+      shape.bezierCurveTo(x + 0.8, y + 0.35, x + 0.8, y, x + 0.5, y);
+      shape.bezierCurveTo(x + 0.35, y, x + 0.25, y + 0.25, x + 0.25, y + 0.25);
+      return shape;
+    }
+
+    function createFloatingHearts3D() {
+      const shape = createHeartShape();
+      const count = window.innerWidth < 600 ? 6 : 10;
+      for (let i = 0; i < count; i++) {
+        const geo = new THREE.ShapeGeometry(shape);
+        geo.center();
+        const mat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setHSL(0.95 + Math.random()*0.04, 0.55, 0.65 + Math.random()*0.1),
+          transparent: true,
+          opacity: 0.22 + Math.random() * 0.18,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        const scale = 0.25 + Math.random() * 0.45;
+        mesh.scale.set(scale, scale, scale);
+        mesh.position.set(
+          (Math.random()-0.5) * 12,
+          (Math.random()-0.5) * 7,
+          (Math.random()-0.5) * 10 - 1
+        );
+        mesh.userData = {
+          baseY: mesh.position.y,
+          phase: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random()-0.5) * 0.4,
+          floatAmp: 0.15 + Math.random() * 0.25
+        };
+        scene.add(mesh);
+        floatingHearts3D.push(mesh);
+      }
+    }
+
+    // Soft glowing orbs
+    let glowOrbs = [];
+    function createGlowOrbs() {
+      const count = window.innerWidth < 600 ? 4 : 7;
+      for (let i = 0; i < count; i++) {
+        const geo = new THREE.SphereGeometry(0.12 + Math.random()*0.18, 16, 16);
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0xffb0d0,
+          transparent: true,
+          opacity: 0.12 + Math.random()*0.1,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(
+          (Math.random()-0.5) * 10,
+          (Math.random()-0.5) * 6,
+          (Math.random()-0.5) * 8
+        );
+        mesh.userData = {
+          base: mesh.position.clone(),
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.2 + Math.random() * 0.35
+        };
+        scene.add(mesh);
+        glowOrbs.push(mesh);
+      }
+    }
+
     function triggerHeartBurst(origin) {
       const now = performance.now();
-      if (now - lastHeartBurst < 700) return;
+      if (now - lastHeartBurst < 550) return;
       lastHeartBurst = now;
 
       const vel = heartParticles.userData.vel;
       const pos = heartParticles.geometry.attributes.position.array;
       for (let i = 0; i < vel.length; i++) {
-        pos[i*3]   = origin.x + (Math.random()-0.5)*0.3;
-        pos[i*3+1] = origin.y + (Math.random()-0.5)*0.3;
-        pos[i*3+2] = origin.z + (Math.random()-0.5)*0.3;
+        pos[i*3]   = origin.x + (Math.random()-0.5)*0.4;
+        pos[i*3+1] = origin.y + (Math.random()-0.5)*0.4;
+        pos[i*3+2] = origin.z + (Math.random()-0.5)*0.4;
         const a = Math.random() * Math.PI * 2;
-        const s = 0.04 + Math.random() * 0.08;
+        const s = 0.05 + Math.random() * 0.12;
         vel[i].x = Math.cos(a) * s;
-        vel[i].y = 0.06 + Math.random() * 0.1;
-        vel[i].z = Math.sin(a) * s * 0.6;
-        vel[i].life = 1.2 + Math.random() * 0.8;
+        vel[i].y = 0.07 + Math.random() * 0.14;
+        vel[i].z = Math.sin(a) * s * 0.65;
+        vel[i].life = 1.4 + Math.random() * 1.0;
       }
       heartParticles.geometry.attributes.position.needsUpdate = true;
 
-      // DOM hearts too
-      for (let i = 0; i < 6; i++) {
+      // DOM hearts (more)
+      for (let i = 0; i < 12; i++) {
         const el = document.createElement('div');
         el.className = 'heart-burst';
-        el.textContent = '♡';
-        el.style.left = (50 + (Math.random()-0.5)*20) + '%';
-        el.style.top  = (45 + (Math.random()-0.5)*15) + '%';
-        el.style.setProperty('--tx', ((Math.random()-0.5)*120) + 'px');
-        el.style.setProperty('--ty', (-80 - Math.random()*100) + 'px');
+        el.textContent = Math.random() > 0.4 ? '♡' : '♥';
+        el.style.left = (50 + (Math.random()-0.5)*30) + '%';
+        el.style.top  = (42 + (Math.random()-0.5)*20) + '%';
+        el.style.fontSize = (14 + Math.random()*14) + 'px';
+        el.style.color = Math.random() > 0.5 ? '#f0a0c0' : '#ff80b0';
+        el.style.setProperty('--tx', ((Math.random()-0.5)*160) + 'px');
+        el.style.setProperty('--ty', (-90 - Math.random()*140) + 'px');
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1500);
+        setTimeout(() => el.remove(), 1600);
       }
+    }
+
+    // Auto soft heart rain occasionally
+    let lastAutoBurst = 0;
+    function maybeAutoHeartRain(t) {
+      if (t - lastAutoBurst < 4.5) return;
+      if (Math.random() > 0.35) return;
+      lastAutoBurst = t;
+      const origin = new THREE.Vector3(
+        (Math.random()-0.5) * 4,
+        -1.5 + Math.random(),
+        (Math.random()-0.5) * 3
+      );
+      // lighter auto burst
+      const vel = heartParticles.userData.vel;
+      const pos = heartParticles.geometry.attributes.position.array;
+      let used = 0;
+      for (let i = 0; i < vel.length && used < 18; i++) {
+        if (vel[i].life > 0.1) continue;
+        pos[i*3]   = origin.x + (Math.random()-0.5)*1.5;
+        pos[i*3+1] = origin.y;
+        pos[i*3+2] = origin.z + (Math.random()-0.5)*1.2;
+        vel[i].x = (Math.random()-0.5) * 0.03;
+        vel[i].y = 0.03 + Math.random() * 0.05;
+        vel[i].z = (Math.random()-0.5) * 0.02;
+        vel[i].life = 2 + Math.random() * 1.5;
+        used++;
+      }
+      heartParticles.geometry.attributes.position.needsUpdate = true;
     }
 
     // Canvas photo textures
@@ -713,8 +791,10 @@
         { x:  2.5, y: 1.4,  z:  1.2, ry: -0.32 },
         { x: -0.7, y: 0.3,  z:  2.3, ry: 0.12 }
       ];
-      for (let i = 0; i < positions.length; i++) {
-        const tex = await createPhotoTexture(i);
+      const count = Math.min(positions.length, PHOTO_URLS.length || positions.length);
+      for (let i = 0; i < count; i++) {
+        const url = PHOTO_URLS[i] || null;
+        const tex = await createPhotoTexture(i, url);
         addPhoto(tex, positions[i]);
       }
     }
@@ -785,7 +865,7 @@
 
       document.getElementById('webcam-wrap').classList.add('visible');
       document.getElementById('status-dot').classList.add('active');
-      document.getElementById('status-text').textContent = 'Tangan terdeteksi';
+      document.getElementById('status-text').textContent = 'Jari terdeteksi';
       document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.add('visible'));
       document.getElementById('floating-msg').classList.add('visible');
 
@@ -795,37 +875,38 @@
     function onHandResults(results) {
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         handLandmarks = results.multiHandLandmarks[0];
-        document.getElementById('status-text').textContent = 'Tangan aktif';
+        document.getElementById('status-text').textContent = 'Jari aktif';
         processGestures(handLandmarks);
       } else {
         handLandmarks = null;
         isPinching = false;
         isFist = false;
         if (grabbedPhoto) grabbedPhoto = null;
-        document.getElementById('status-text').textContent = 'Mencari tangan...';
+        document.getElementById('status-text').textContent = 'Mencari jari...';
         document.getElementById('gesture-label').classList.remove('show');
       }
     }
 
     function processGestures(landmarks) {
-      const wrist = landmarks[0];
+      // Landmark jari
       const thumbTip = landmarks[4];
       const indexTip = landmarks[8];
       const middleTip = landmarks[12];
       const ringTip = landmarks[16];
       const pinkyTip = landmarks[20];
+      const indexPip = landmarks[6];
       const indexMcp = landmarks[5];
+      const middlePip = landmarks[10];
       const middleMcp = landmarks[9];
-      const ringMcp = landmarks[13];
-      const pinkyMcp = landmarks[17];
+      const ringPip = landmarks[14];
+      const pinkyPip = landmarks[18];
 
-      const palmX = (wrist.x + indexMcp.x + middleMcp.x) / 3;
-      const palmY = (wrist.y + indexMcp.y + middleMcp.y) / 3;
-      const handX = 1 - palmX;
-      const handY = palmY;
+      // Posisi kontrol utama = ujung jari telunjuk (lebih presisi)
+      const fingerX = 1 - indexTip.x;
+      const fingerY = indexTip.y;
 
-      prevHandX += (handX - prevHandX) * CONFIG.handSmooth;
-      prevHandY += (handY - prevHandY) * CONFIG.handSmooth;
+      prevHandX += (fingerX - prevHandX) * CONFIG.handSmooth;
+      prevHandY += (fingerY - prevHandY) * CONFIG.handSmooth;
 
       handWorldPos.set(
         (prevHandX - 0.5) * 8.5,
@@ -833,45 +914,46 @@
         1.6
       );
 
-      // Pinch
-      const dx = thumbTip.x - indexTip.x;
-      const dy = thumbTip.y - indexTip.y;
-      const pinchDist = Math.sqrt(dx*dx + dy*dy);
+      // --- Deteksi jari terentang (tip lebih tinggi dari pip di image = y lebih kecil) ---
+      const indexUp  = (indexPip.y  - indexTip.y)  > 0.04;
+      const middleUp = (middlePip.y - middleTip.y) > 0.04;
+      const ringUp   = (ringPip.y   - ringTip.y)   > 0.04;
+      const pinkyUp  = (pinkyPip.y  - pinkyTip.y)  > 0.04;
+
+      // Cubit: jempol + telunjuk dekat
+      const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
       const wasPinching = isPinching;
       isPinching = pinchDist < CONFIG.pinchThreshold;
 
-      // Open palm (fingers extended)
-      const tipY = (indexTip.y + middleTip.y + ringTip.y + pinkyTip.y) / 4;
-      const mcpY = (indexMcp.y + middleMcp.y + ringMcp.y + pinkyMcp.y) / 4;
-      isOpenPalm = (mcpY - tipY) > CONFIG.openPalmThreshold && pinchDist > 0.1;
+      // Pointing: hanya telunjuk terangkat, jari lain menekuk
+      const isPointing = indexUp && !middleUp && !ringUp && !pinkyUp && !isPinching;
 
-      // Fist (all fingertips close to MCPs)
-      const fistDists = [
-        Math.hypot(indexTip.x - indexMcp.x, indexTip.y - indexMcp.y),
-        Math.hypot(middleTip.x - middleMcp.x, middleTip.y - middleMcp.y),
-        Math.hypot(ringTip.x - ringMcp.x, ringTip.y - ringMcp.y),
-        Math.hypot(pinkyTip.x - pinkyMcp.x, pinkyTip.y - pinkyMcp.y)
-      ];
-      const avgFist = fistDists.reduce((a,b) => a+b, 0) / 4;
+      // Two fingers (peace / V): telunjuk + jari tengah
+      const isTwoFingers = indexUp && middleUp && !ringUp && !pinkyUp && !isPinching;
+
+      // Fist: semua jari menekuk
       wasFist = isFist;
-      isFist = avgFist < CONFIG.fistThreshold && pinchDist < 0.12;
+      isFist = !indexUp && !middleUp && !ringUp && !pinkyUp && pinchDist > 0.06;
 
       // Label
       const label = document.getElementById('gesture-label');
       if (isPinching) {
         label.textContent = 'Cubit · ambil foto';
         label.classList.add('show');
+      } else if (isTwoFingers) {
+        label.textContent = 'Dua jari · heart burst';
+        label.classList.add('show');
+      } else if (isPointing) {
+        label.textContent = 'Telunjuk · geser ruang';
+        label.classList.add('show');
       } else if (isFist) {
         label.textContent = 'Kepalan · heart burst';
-        label.classList.add('show');
-      } else if (isOpenPalm) {
-        label.textContent = 'Telapak · geser ruang';
         label.classList.add('show');
       } else {
         label.classList.remove('show');
       }
 
-      // Grab
+      // Grab dengan cubit (posisi mengikuti ujung telunjuk)
       if (isPinching && !wasPinching) {
         let nearest = null, minD = 1.9;
         photos.forEach(p => {
@@ -891,13 +973,19 @@
         grabbedPhoto.position.z = handWorldPos.z * 0.35 + grabOffset.z * 0.25;
       }
 
-      // Fist → heart burst
-      if (isFist && !wasFist) {
+      // Heart burst: dua jari ATAU kepalan
+      if ((isTwoFingers || isFist) && !wasFist && !isPinching) {
+        // hindari spam: hanya saat transisi ke gesture
+        if (isFist && !wasFist) triggerHeartBurst(handWorldPos.clone());
+      }
+      // two fingers trigger sekali saat masuk gesture
+      if (isTwoFingers && !window._wasTwoFingers) {
         triggerHeartBurst(handWorldPos.clone());
       }
+      window._wasTwoFingers = isTwoFingers;
 
-      // Open palm pan/scroll
-      if (isOpenPalm && !isPinching) {
+      // Geser ruang dengan jari telunjuk (pointing)
+      if (isPointing && !isPinching) {
         const deltaX = prevHandX - 0.5;
         const deltaY = prevHandY - 0.5;
         targetCamX = -deltaX * CONFIG.panSensitivity;
@@ -1018,7 +1106,7 @@
         particles.geometry.attributes.position.needsUpdate = true;
       }
 
-      // Heart particles physics
+      // Burst heart particles
       if (heartParticles) {
         const pos = heartParticles.geometry.attributes.position.array;
         const vel = heartParticles.userData.vel;
@@ -1029,19 +1117,60 @@
             pos[i*3]   += vel[i].x;
             pos[i*3+1] += vel[i].y;
             pos[i*3+2] += vel[i].z;
-            vel[i].y -= 0.0015;
+            vel[i].y -= 0.0014;
             vel[i].life -= 0.016;
           } else {
-            pos[i*3+1] = -20;
+            pos[i*3+1] = -25;
           }
         }
         if (anyAlive) heartParticles.geometry.attributes.position.needsUpdate = true;
       }
 
-      // Soft pulse on floating message opacity when music plays
+      // Ambient falling hearts
+      if (ambientHearts) {
+        const pos = ambientHearts.geometry.attributes.position.array;
+        const data = ambientHearts.userData.data;
+        for (let i = 0; i < data.length; i++) {
+          pos[i*3+1] -= data[i].speed;
+          pos[i*3] = data[i].baseX + Math.sin(t * data[i].swaySpeed + data[i].sway) * 0.35;
+          if (pos[i*3+1] < -5) {
+            pos[i*3+1] = 6 + Math.random() * 3;
+            data[i].baseX = (Math.random()-0.5) * 18;
+            pos[i*3] = data[i].baseX;
+            pos[i*3+2] = (Math.random()-0.5) * 14;
+          }
+        }
+        ambientHearts.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // 3D floating heart meshes
+      floatingHearts3D.forEach((h) => {
+        const u = h.userData;
+        h.position.y = u.baseY + Math.sin(t * 0.45 + u.phase) * u.floatAmp;
+        h.rotation.z = Math.sin(t * 0.3 + u.phase) * 0.25;
+        h.rotation.y += u.rotSpeed * 0.01;
+        h.material.opacity = 0.18 + Math.sin(t * 0.7 + u.phase) * 0.1;
+      });
+
+      // Glow orbs drift
+      glowOrbs.forEach((o) => {
+        const u = o.userData;
+        o.position.x = u.base.x + Math.sin(t * u.speed + u.phase) * 0.8;
+        o.position.y = u.base.y + Math.cos(t * u.speed * 0.8 + u.phase) * 0.5;
+        o.position.z = u.base.z + Math.sin(t * u.speed * 0.6 + u.phase) * 0.6;
+        const s = 1 + Math.sin(t * 1.2 + u.phase) * 0.25;
+        o.scale.set(s, s, s);
+        o.material.opacity = 0.1 + Math.sin(t * 0.9 + u.phase) * 0.06;
+      });
+
+      // Occasional auto heart rain
+      maybeAutoHeartRain(t);
+
+      // Soft pulse on floating message
       const fm = document.getElementById('floating-msg');
-      if (floatingMsgVisible && musicPlaying) {
-        fm.style.opacity = 0.75 + Math.sin(t * 0.6) * 0.15;
+      if (floatingMsgVisible) {
+        const base = musicPlaying ? 0.78 : 0.7;
+        fm.style.opacity = base + Math.sin(t * 0.55) * 0.14;
       }
 
       renderer.render(scene, camera);
@@ -1063,64 +1192,36 @@
       } catch (err) {
         console.error(err);
         document.getElementById('status-text').textContent = 'Izin kamera ditolak';
-        alert('Mohon izinkan akses kamera untuk menggunakan fitur tangan.');
+        alert('Mohon izinkan akses kamera untuk menggunakan fitur jari.');
       }
-    });
-
-    document.getElementById('upload-btn').addEventListener('click', () => {
-      document.getElementById('file-input').click();
-    });
-
-    document.getElementById('file-input').addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files).slice(0, 4);
-      for (const file of files) {
-        if (photos.length >= CONFIG.maxPhotos) break;
-        const url = URL.createObjectURL(file);
-        const tex = await createPhotoTexture(photos.length, url);
-        const angle = Math.random() * Math.PI * 2;
-        const r = 1.4 + Math.random() * 2.8;
-        addPhoto(tex, {
-          x: Math.cos(angle) * r,
-          y: (Math.random() - 0.5) * 2.6,
-          z: Math.sin(angle) * r * 0.65,
-          ry: (Math.random() - 0.5) * 0.55
-        });
-      }
-      e.target.value = '';
-    });
-
-    // Message panel
-    document.getElementById('msg-btn').addEventListener('click', () => {
-      document.getElementById('msg-panel').classList.add('open');
-      document.getElementById('msg-input').value = document.getElementById('msg-text-content').textContent;
-    });
-
-    document.getElementById('msg-cancel').addEventListener('click', () => {
-      document.getElementById('msg-panel').classList.remove('open');
-    });
-
-    document.getElementById('msg-save').addEventListener('click', () => {
-      const val = document.getElementById('msg-input').value.trim() || 'Untukmu yang selalu ada';
-      document.getElementById('msg-text-content').textContent = val;
-      document.getElementById('msg-panel').classList.remove('open');
-      floatingMsgVisible = true;
-      document.getElementById('floating-msg').classList.add('visible');
     });
 
     // Music
     document.getElementById('music-btn').addEventListener('click', toggleMusic);
 
-    // Close panel on outside click
-    document.getElementById('msg-panel').addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('click', (e) => {
-      const panel = document.getElementById('msg-panel');
-      if (panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'msg-btn') {
-        panel.classList.remove('open');
-      }
-    });
-
     // ===================== BOOT =====================
+    function spawnBgHearts() {
+      const container = document.getElementById('bg-hearts');
+      const n = window.innerWidth < 600 ? 12 : 20;
+      for (let i = 0; i < n; i++) {
+        const el = document.createElement('div');
+        el.className = 'bg-heart';
+        el.textContent = Math.random() > 0.3 ? '♡' : '♥';
+        el.style.left = Math.random() * 100 + '%';
+        el.style.fontSize = (10 + Math.random() * 16) + 'px';
+        el.style.animationDuration = (10 + Math.random() * 14) + 's';
+        el.style.animationDelay = (Math.random() * 12) + 's';
+        container.appendChild(el);
+      }
+    }
+
     window.addEventListener('load', () => {
+      // Terapkan pesan dari codingan
+      document.getElementById('msg-text-content').textContent = LOVE_MESSAGE;
+      const fromEl = document.querySelector('#floating-msg .msg-from');
+      if (fromEl) fromEl.textContent = LOVE_FROM;
+
+      spawnBgHearts();
       initThree();
       setTimeout(() => document.getElementById('loading').classList.add('hidden'), 500);
     });

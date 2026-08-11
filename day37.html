@@ -394,7 +394,7 @@
       </div>
     </div>
     <div class="hint" id="hint">
-      Telunjuk · geser ruang &nbsp;·&nbsp; Cubit · ambil foto &nbsp;·&nbsp; Dua jari / kepalan · heart burst
+      Telunjuk · geser ruang &nbsp;·&nbsp; Dekatkan jari ke foto lalu cubit · pindahkan &nbsp;·&nbsp; Dua jari · heart burst
     </div>
   </div>
 
@@ -443,7 +443,7 @@
       handSmooth: 0.2,
       panSensitivity: 4.5,
       scrollSensitivity: 0.04,
-      pinchThreshold: 0.055,
+      pinchThreshold: 0.07,
       fistThreshold: 0.07,
       openPalmThreshold: 0.09
     };
@@ -469,6 +469,9 @@
     let musicNodes = [];
     let lastHeartBurst = 0;
     let floatingMsgVisible = true;
+    let fingerCursor = null;
+    let nearestPhoto = null;
+    const GRAB_RANGE = 2.8; // jarak maksimal untuk mengambil foto (lebih mudah)
 
     // ===================== INIT THREE =====================
     function initThree() {
@@ -506,6 +509,7 @@
       createAmbientHearts();
       createFloatingHearts3D();
       createGlowOrbs();
+      createFingerCursor();
       createDefaultPhotos();
 
       // Soft floor
@@ -662,6 +666,36 @@
         scene.add(mesh);
         glowOrbs.push(mesh);
       }
+    }
+
+    function createFingerCursor() {
+      // Titik kecil di ujung jari telunjuk agar mudah melihat posisi
+      const geo = new THREE.SphereGeometry(0.07, 16, 16);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffb0d0,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      fingerCursor = new THREE.Mesh(geo, mat);
+      fingerCursor.visible = false;
+
+      // ring luar
+      const ringGeo = new THREE.RingGeometry(0.1, 0.14, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xffd0e8,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      fingerCursor.add(ring);
+      fingerCursor.userData.ring = ring;
+
+      scene.add(fingerCursor);
     }
 
     function triggerHeartBurst(origin) {
@@ -881,7 +915,20 @@
         handLandmarks = null;
         isPinching = false;
         isFist = false;
-        if (grabbedPhoto) grabbedPhoto = null;
+        nearestPhoto = null;
+        if (grabbedPhoto) {
+          grabbedPhoto.userData.baseY = grabbedPhoto.position.y;
+          grabbedPhoto = null;
+        }
+        if (fingerCursor) fingerCursor.visible = false;
+        // reset highlight
+        photos.forEach(p => {
+          p.scale.set(1, 1, 1);
+          if (p.children[2] && p.children[2].material) {
+            p.children[2].material.opacity = 0.32;
+            p.children[2].material.color.set(0xd0a0b8);
+          }
+        });
         document.getElementById('status-text').textContent = 'Mencari jari...';
         document.getElementById('gesture-label').classList.remove('show');
       }
@@ -935,10 +982,59 @@
       wasFist = isFist;
       isFist = !indexUp && !middleUp && !ringUp && !pinkyUp && pinchDist > 0.06;
 
+      // Cari foto terdekat dari ujung jari (selalu, agar mudah diambil)
+      nearestPhoto = null;
+      let minD = GRAB_RANGE;
+      photos.forEach(p => {
+        if (p === grabbedPhoto) return;
+        const d = p.position.distanceTo(handWorldPos);
+        if (d < minD) {
+          minD = d;
+          nearestPhoto = p;
+        }
+      });
+
+      // Highlight foto terdekat (sedikit membesar + border lebih terang)
+      photos.forEach(p => {
+        const isNear = p === nearestPhoto && !grabbedPhoto;
+        const isHeld = p === grabbedPhoto;
+        const targetScale = isHeld ? 1.12 : (isNear ? 1.06 : 1.0);
+        p.scale.x += (targetScale - p.scale.x) * 0.15;
+        p.scale.y += (targetScale - p.scale.y) * 0.15;
+        p.scale.z += (targetScale - p.scale.z) * 0.15;
+
+        // border glow
+        if (p.children[2] && p.children[2].material) {
+          p.children[2].material.opacity = isHeld ? 0.85 : (isNear ? 0.65 : 0.32);
+          p.children[2].material.color.set(isHeld || isNear ? 0xffc0d8 : 0xd0a0b8);
+        }
+      });
+
+      // Finger cursor
+      if (fingerCursor) {
+        fingerCursor.visible = true;
+        fingerCursor.position.copy(handWorldPos);
+        const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.15;
+        fingerCursor.scale.setScalar(isPinching ? 1.35 : pulse);
+        fingerCursor.material.opacity = isPinching ? 0.85 : 0.5;
+        if (fingerCursor.userData.ring) {
+          fingerCursor.userData.ring.material.opacity = isPinching ? 0.7 : 0.3;
+        }
+      }
+
       // Label
       const label = document.getElementById('gesture-label');
-      if (isPinching) {
+      if (isPinching && grabbedPhoto) {
+        label.textContent = 'Menggeser foto';
+        label.classList.add('show');
+      } else if (isPinching && nearestPhoto) {
         label.textContent = 'Cubit · ambil foto';
+        label.classList.add('show');
+      } else if (isPinching) {
+        label.textContent = 'Cubit · dekatkan ke foto';
+        label.classList.add('show');
+      } else if (nearestPhoto && !isPointing) {
+        label.textContent = 'Dekat foto · cubit untuk ambil';
         label.classList.add('show');
       } else if (isTwoFingers) {
         label.textContent = 'Dua jari · heart burst';
@@ -953,24 +1049,28 @@
         label.classList.remove('show');
       }
 
-      // Grab dengan cubit (posisi mengikuti ujung telunjuk)
+      // Grab: cubit saat dekat foto (range lebih besar = lebih mudah)
       if (isPinching && !wasPinching) {
-        let nearest = null, minD = 1.9;
-        photos.forEach(p => {
-          const d = p.position.distanceTo(handWorldPos);
-          if (d < minD) { minD = d; nearest = p; }
-        });
-        if (nearest) {
-          grabbedPhoto = nearest;
-          grabOffset.copy(nearest.position).sub(handWorldPos);
+        if (nearestPhoto) {
+          grabbedPhoto = nearestPhoto;
+          // offset kecil supaya foto "nempel" di jari, tidak loncat
+          grabOffset.set(0, 0, 0);
+          nearestPhoto = null;
         }
       }
-      if (!isPinching && wasPinching) grabbedPhoto = null;
 
+      // Lepas foto
+      if (!isPinching && wasPinching && grabbedPhoto) {
+        // simpan posisi Y baru supaya float lanjut dari sini
+        grabbedPhoto.userData.baseY = grabbedPhoto.position.y;
+        grabbedPhoto = null;
+      }
+
+      // Gerakkan foto yang dipegang — langsung ikuti jari (mudah)
       if (grabbedPhoto && isPinching) {
-        grabbedPhoto.position.x = handWorldPos.x + grabOffset.x;
-        grabbedPhoto.position.y = handWorldPos.y + grabOffset.y;
-        grabbedPhoto.position.z = handWorldPos.z * 0.35 + grabOffset.z * 0.25;
+        grabbedPhoto.position.x += (handWorldPos.x - grabbedPhoto.position.x) * 0.35;
+        grabbedPhoto.position.y += (handWorldPos.y - grabbedPhoto.position.y) * 0.35;
+        grabbedPhoto.position.z += (handWorldPos.z * 0.5 - grabbedPhoto.position.z) * 0.25;
       }
 
       // Heart burst: dua jari ATAU kepalan

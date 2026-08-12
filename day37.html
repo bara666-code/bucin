@@ -389,7 +389,7 @@
   <div id="photo-panel">
     <button id="photo-panel-close" title="Tutup">×</button>
     <h3>Kelola Foto</h3>
-    <p class="hint-text">Klik "Ganti" untuk upload foto dari HP/laptop. Perubahan langsung terlihat di galeri 3D.</p>
+    <p class="hint-text">Upload foto dari HP/laptop. Foto tersimpan di browser ini dan tidak hilang saat di-refresh.</p>
     <div id="photo-list"></div>
     <div id="photo-panel-actions">
       <button id="add-photo-btn">+ Tambah foto</button>
@@ -428,13 +428,10 @@
     //  PENGATURAN MUDAH DIUBAH
     // ============================================================
 
-    // 1. FOTO — ganti URL / path di sini
-    //    Cara pakai file lokal:
-    //    1. Taruh foto di folder YANG SAMA dengan index.html
-    //    2. Tulis nama filenya, contoh: "foto1.jpg"
-    //    3. Simpan, lalu refresh keras: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)
-    //    Catatan: file:// kadang diblokir browser. Lebih aman buka lewat Live Server.
-    let photos = [
+    // 1. FOTO default (dipakai jika belum pernah upload)
+    //    Foto yang diupload lewat tombol 📷 tersimpan otomatis di browser
+    //    dan tetap ada saat refresh / buka ulang.
+    const DEFAULT_PHOTOS = [
       "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
       "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
       "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
@@ -442,6 +439,70 @@
       "https://images.unsplash.com/photo-1518621012118-2e4e2546b6b9?w=800&q=80",
       "https://images.unsplash.com/photo-1494774157368-9f8b2b3d0b0b?w=800&q=80"
     ];
+
+    const STORAGE_KEY = 'bucin3d_photos_v1';
+
+    function loadSavedPhotos() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return DEFAULT_PHOTOS.slice();
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.warn('Gagal baca foto tersimpan:', e);
+      }
+      return DEFAULT_PHOTOS.slice();
+    }
+
+    function savePhotos() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
+        console.log('Foto disimpan (' + photos.length + ' buah)');
+      } catch (e) {
+        console.error('Gagal simpan foto (storage penuh?):', e);
+        alert('Gagal menyimpan foto. Coba kurangi jumlah/ukuran foto.');
+      }
+    }
+
+    // Kompres gambar jadi data-URL supaya bisa disimpan di localStorage
+    function fileToSavedDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const tempUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          const maxSide = 900;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxSide || h > maxSide) {
+            if (w > h) {
+              h = Math.round(h * (maxSide / w));
+              w = maxSide;
+            } else {
+              w = Math.round(w * (maxSide / h));
+              h = maxSide;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(tempUrl);
+          try {
+            resolve(canvas.toDataURL('image/jpeg', 0.72));
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(tempUrl);
+          reject(new Error('Gagal baca file gambar'));
+        };
+        img.src = tempUrl;
+      });
+    }
+
+    let photos = loadSavedPhotos();
 
     // 2. PESAN ROMANTIS — ubah teks di sini
     const loveMessage = {
@@ -837,8 +898,9 @@
       photos.forEach((url, i) => {
         const row = document.createElement('div');
         row.className = 'photo-row';
-        const name = url.startsWith('blob:') ? 'Foto upload ' + (i + 1) :
-          (url.split('/').pop() || 'Foto ' + (i + 1)).substring(0, 28);
+        const name = (url.startsWith('data:') || url.startsWith('blob:'))
+          ? 'Tersimpan di browser'
+          : (url.split('/').pop() || 'Foto ' + (i + 1)).substring(0, 28);
         row.innerHTML =
           '<img class="photo-thumb" src="' + url + '" alt="foto' + (i + 1) + '" />' +
           '<span>Foto ' + (i + 1) + ' — ' + name + '</span>' +
@@ -904,40 +966,43 @@
           alert('Minimal 1 foto harus ada.');
           return;
         }
-        // Revoke blob URL jika perlu
-        if (photos[i] && photos[i].startsWith('blob:')) {
-          try { URL.revokeObjectURL(photos[i]); } catch (err) {}
-        }
         photos.splice(i, 1);
+        savePhotos();
         rebuildGallery();
       }
     });
 
-    fileInput.addEventListener('change', () => {
+    fileInput.addEventListener('change', async () => {
       const file = fileInput.files && fileInput.files[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) {
         alert('Pilih file gambar (jpg, png, dll).');
         return;
       }
-      const objectUrl = URL.createObjectURL(file);
 
-      if (pendingReplaceIndex >= 0 && pendingReplaceIndex < photos.length) {
-        // Ganti foto existing
-        if (photos[pendingReplaceIndex].startsWith('blob:')) {
-          try { URL.revokeObjectURL(photos[pendingReplaceIndex]); } catch (err) {}
+      statusEl.textContent = 'Menyimpan foto...';
+      try {
+        // Kompres & simpan sebagai data-URL agar tetap ada saat reload
+        const dataUrl = await fileToSavedDataUrl(file);
+
+        if (pendingReplaceIndex >= 0 && pendingReplaceIndex < photos.length) {
+          photos[pendingReplaceIndex] = dataUrl;
+          applyTextureToMesh(pendingReplaceIndex, dataUrl);
+          renderPhotoList();
+        } else {
+          photos.push(dataUrl);
+          rebuildGallery();
         }
-        photos[pendingReplaceIndex] = objectUrl;
-        applyTextureToMesh(pendingReplaceIndex, objectUrl);
-        renderPhotoList();
-      } else {
-        // Tambah foto baru → rebuild posisi lingkaran
-        photos.push(objectUrl);
-        rebuildGallery();
+        savePhotos();
+        pendingReplaceIndex = -1;
+        statusEl.textContent = 'Foto tersimpan ✓';
+        statusEl.className = 'ready';
+      } catch (err) {
+        console.error(err);
+        alert('Gagal memproses foto. Coba file lain.');
+        statusEl.textContent = 'Gagal simpan foto';
+        statusEl.className = 'error';
       }
-      pendingReplaceIndex = -1;
-      statusEl.textContent = 'Foto berhasil diubah';
-      statusEl.className = 'ready';
     });
 
     // ---- Animation loop ----

@@ -256,14 +256,19 @@
     //  PENGATURAN MUDAH DIUBAH
     // ============================================================
 
-    // 1. FOTO — ganti URL sesuai keinginan
+    // 1. FOTO — ganti URL / path di sini
+    //    Cara pakai file lokal:
+    //    1. Taruh foto di folder YANG SAMA dengan index.html
+    //    2. Tulis nama filenya, contoh: "foto1.jpg"
+    //    3. Simpan, lalu refresh keras: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)
+    //    Catatan: file:// kadang diblokir browser. Lebih aman buka lewat Live Server.
     const photos = [
       "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
       "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
       "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
       "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
-      "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
-      "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true"
+      "https://images.unsplash.com/photo-1518621012118-2e4e2546b6b9?w=800&q=80",
+      "https://images.unsplash.com/photo-1494774157368-9f8b2b3d0b0b?w=800&q=80"
     ];
 
     // 2. PESAN ROMANTIS — ubah teks di sini
@@ -383,6 +388,7 @@
     function createPhotoGallery() {
       const radius = 3.2;
       const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous'); // penting untuk foto online
 
       photos.forEach((url, i) => {
         const angle = (i / photos.length) * Math.PI * 2;
@@ -449,25 +455,33 @@
         scene.add(mesh);
         photoMeshes.push(mesh);
 
-        // Load texture ke DEPAN dan BELAKANG
+        // Load texture (cache-bust + CORS) ke depan & belakang
+        const cacheBust = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
         loader.load(
-          url,
+          cacheBust,
           (tex) => {
             tex.minFilter = THREE.LinearFilter;
-            // Clone texture agar bisa di-flip untuk belakang (opsional)
+            tex.magFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
+
             frontMat.map = tex;
+            frontMat.color.set(0xffffff);
             frontMat.needsUpdate = true;
 
-            // Belakang pakai texture yang sama (terlihat saat foto di sisi belakang)
-            const backTex = tex.clone();
-            backTex.needsUpdate = true;
-            backMat.map = backTex;
+            // Pakai texture yang sama di belakang (tanpa clone yang sering gagal)
+            backMat.map = tex;
+            backMat.color.set(0xffffff);
             backMat.needsUpdate = true;
+
+            console.log('Foto loaded:', url);
           },
           undefined,
-          () => {
-            frontMat.color.set(0x3a2a32);
-            backMat.color.set(0x2a1a22);
+          (err) => {
+            console.error('GAGAL load foto:', url, err);
+            frontMat.color.set(0x5a3a48);
+            backMat.color.set(0x3a2a32);
+            frontMat.needsUpdate = true;
+            backMat.needsUpdate = true;
           }
         );
       });

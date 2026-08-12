@@ -259,7 +259,7 @@
 
     // 1. FOTO — ganti URL sesuai keinginan
     const photos = [
-      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
+      "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
       "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
       "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
       "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&q=80",
@@ -642,29 +642,57 @@
 
     // ---- Musik controls ----
     let isPlaying = false;
-    musicBtn.addEventListener('click', async () => {
+
+    async function playMusic() {
       try {
-        if (isPlaying) {
-          bgMusic.pause();
-          musicBtn.textContent = '♪';
-          musicBtn.classList.remove('playing');
-          isPlaying = false;
-        } else {
-          // Volume lembut
-          bgMusic.volume = 0.45;
-          await bgMusic.play();
-          musicBtn.textContent = '❚❚';
-          musicBtn.classList.add('playing');
-          isPlaying = true;
-        }
+        bgMusic.volume = 0.45;
+        await bgMusic.play();
+        musicBtn.textContent = '❚❚';
+        musicBtn.classList.add('playing');
+        isPlaying = true;
+        return true;
       } catch (e) {
-        console.warn('Musik tidak bisa diputar otomatis:', e);
-        statusEl.textContent = 'Klik lagi tombol musik';
+        console.warn('Autoplay diblokir browser:', e);
+        return false;
+      }
+    }
+
+    function pauseMusic() {
+      bgMusic.pause();
+      musicBtn.textContent = '♪';
+      musicBtn.classList.remove('playing');
+      isPlaying = false;
+    }
+
+    musicBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (isPlaying) {
+        pauseMusic();
+      } else {
+        await playMusic();
       }
     });
 
+    // Coba autoplay setelah loading selesai.
+    // Kalau browser memblokir, lagu akan otomatis diputar
+    // saat user klik/tap pertama kali di mana saja.
+    async function tryAutoplay() {
+      const success = await playMusic();
+      if (!success) {
+        const startOnInteract = async () => {
+          if (!isPlaying) await playMusic();
+          document.removeEventListener('click', startOnInteract);
+          document.removeEventListener('touchstart', startOnInteract);
+        };
+        document.addEventListener('click', startOnInteract, { once: true });
+        document.addEventListener('touchstart', startOnInteract, { once: true });
+      }
+    }
+
     // Jalankan
-    start();
+    start().then(() => {
+      setTimeout(tryAutoplay, 1200);
+    });
   </script>
 </body>
 </html>

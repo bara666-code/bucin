@@ -360,7 +360,7 @@
   </div>
 
   <div id="ui">
-    <div id="title">Kenangan Kita</div>
+    <div id="title">UNTUKMU</div>
     <div id="subtitle">Geser jari telunjuk untuk ganti foto</div>
   </div>
 
@@ -389,17 +389,20 @@
   <div id="photo-panel">
     <button id="photo-panel-close" title="Tutup">×</button>
     <h3>Kelola Foto</h3>
-    <p class="hint-text">Upload foto dari HP/laptop. Foto tersimpan di browser ini dan tidak hilang saat di-refresh.</p>
+    <p class="hint-text">Upload foto tersimpan di browser. Untuk pindah ke HP/laptop lain, pakai Export lalu Import di device tersebut.</p>
     <div id="photo-list"></div>
     <div id="photo-panel-actions">
       <button id="add-photo-btn">+ Tambah foto</button>
+      <button id="export-photos-btn">Export</button>
+      <button id="import-photos-btn">Import</button>
       <button id="close-panel-btn">Selesai</button>
     </div>
   </div>
   <input type="file" id="file-input" accept="image/*" />
+  <input type="file" id="import-input" accept=".json,application/json" style="display:none" />
 
   <div id="webcam-wrap">
-    <video id="webcam" playsinline autoplay muted></video>
+    <video id="webcam" playsinline autoplay muted webkit-playsinline></video>
     <canvas id="webcam-canvas"></canvas>
   </div>
 
@@ -413,7 +416,7 @@
       2. Atau pakai link .mp3 langsung
       3. Contoh di bawah bisa diganti
     -->
-    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    <source src="https://github.com/user-attachments/files/30979052/AKAD.-.PAYUNG.TEDUH.LIRIK.mp3" type="audio/mpeg">
   </audio>
 
   <!-- Three.js -->
@@ -432,11 +435,11 @@
     //    Foto yang diupload lewat tombol 📷 tersimpan otomatis di browser
     //    dan tetap ada saat refresh / buka ulang.
     const DEFAULT_PHOTOS = [
-      "https://github.com/bara666-code/bucin/blob/main/773028252_1056242753462319_625250555277948336_n.jpg?raw=true",
-      "https://github.com/bara666-code/bucin/blob/main/772663552_1683586699609670_4417034705812126582_n.jpg?raw=true",
-      "https://github.com/bara666-code/bucin/blob/main/772359633_1037206202266060_1137285899655307078_n.jpg?raw=true",
-      "https://github.com/bara666-code/bucin/blob/main/770677809_2237933236993926_7891771243646739209_n.jpg?raw=true",
-      "https://github.com/bara666-code/bucin/blob/main/770067586_918485721329371_7180116360826784365_n.jpg?raw=true",
+      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
+      "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
+      "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
+      "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&q=80",
+      "https://images.unsplash.com/photo-1518621012118-2e4e2546b6b9?w=800&q=80",
       "https://images.unsplash.com/photo-1494774157368-9f8b2b3d0b0b?w=800&q=80"
     ];
 
@@ -1005,6 +1008,58 @@
       }
     });
 
+    // Export foto → file .json (bisa dipindah ke device lain)
+    document.getElementById('export-photos-btn').addEventListener('click', () => {
+      try {
+        const payload = {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          photos: photos
+        };
+        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'bucin3d-fotos.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        statusEl.textContent = 'Export berhasil — kirim file ke device lain';
+        statusEl.className = 'ready';
+      } catch (e) {
+        alert('Gagal export: ' + e.message);
+      }
+    });
+
+    // Import foto dari device lain
+    const importInput = document.getElementById('import-input');
+    document.getElementById('import-photos-btn').addEventListener('click', () => {
+      importInput.value = '';
+      importInput.click();
+    });
+    importInput.addEventListener('change', () => {
+      const file = importInput.files && importInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const list = Array.isArray(data) ? data : (data.photos || []);
+          if (!Array.isArray(list) || list.length === 0) {
+            alert('File tidak berisi foto yang valid.');
+            return;
+          }
+          photos = list;
+          savePhotos();
+          rebuildGallery();
+          statusEl.textContent = 'Import berhasil ✓ (' + photos.length + ' foto)';
+          statusEl.className = 'ready';
+          renderPhotoList();
+        } catch (e) {
+          alert('File rusak atau bukan format export yang benar.');
+        }
+      };
+      reader.readAsText(file);
+    });
+
     // ---- Animation loop ----
     function animate() {
       requestAnimationFrame(animate);
@@ -1051,44 +1106,72 @@
       renderer.render(scene, camera);
     }
 
-    // ---- Start MediaPipe + Camera ----
+    // ---- Start MediaPipe + Camera (optimized for mobile) ----
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints > 0 && window.innerWidth < 900);
+
     async function start() {
       initThree();
+      setupTouchSwipe(); // cadangan kontrol di HP
 
       const hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
       });
 
+      // Di HP: model lebih ringan & confidence lebih longgar
       hands.setOptions({
         maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.6,
-        minTrackingConfidence: 0.5
+        modelComplexity: isMobile ? 0 : 1,
+        minDetectionConfidence: isMobile ? 0.45 : 0.55,
+        minTrackingConfidence: isMobile ? 0.4 : 0.5,
+        selfieMode: true
       });
 
       hands.onResults(onHandResults);
 
-      const cameraUtils = new Camera(videoEl, {
-        onFrame: async () => {
-          await hands.send({ image: videoEl });
-        },
-        width: 640,
-        height: 480
-      });
+      const camW = isMobile ? 320 : 640;
+      const camH = isMobile ? 240 : 480;
 
       try {
-        await cameraUtils.start();
-        loadingEl.classList.add('hidden');
-        statusEl.textContent = 'Kamera siap • Arahkan tangan';
+        // getUserMedia manual dulu (lebih andal di HP)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: 'user',
+            width: { ideal: camW },
+            height: { ideal: camH }
+          }
+        });
+        videoEl.srcObject = stream;
+        videoEl.setAttribute('playsinline', 'true');
+        videoEl.setAttribute('webkit-playsinline', 'true');
+        videoEl.muted = true;
+        await videoEl.play();
 
-        // Tampilkan pesan romantis
+        // Loop kirim frame ke MediaPipe
+        let sending = false;
+        async function processFrame() {
+          if (!sending && videoEl.readyState >= 2) {
+            sending = true;
+            try {
+              await hands.send({ image: videoEl });
+            } catch (e) {
+              // ignore frame error
+            }
+            sending = false;
+          }
+          requestAnimationFrame(processFrame);
+        }
+        processFrame();
+
+        loadingEl.classList.add('hidden');
+        statusEl.textContent = isMobile
+          ? 'Kamera siap • Geser jari / swipe layar'
+          : 'Kamera siap • Arahkan jari telunjuk';
+
         messageText.innerHTML = loveMessage.text;
         messageFrom.textContent = loveMessage.from;
-        setTimeout(() => {
-          messageBox.classList.add('show');
-        }, 900);
-
-        // Auto hide hint after 6s even if no hand
+        setTimeout(() => messageBox.classList.add('show'), 900);
         setTimeout(() => {
           if (!hintHidden) {
             hintEl.classList.add('hidden');
@@ -1097,10 +1180,37 @@
         }, 7000);
       } catch (err) {
         console.error(err);
-        loadingEl.innerHTML = '<p style="color:#f0a0a0">Gagal akses kamera.<br>Pastikan izin kamera diizinkan.</p>';
-        statusEl.textContent = 'Error kamera';
+        loadingEl.innerHTML = '<p style="color:#f0a0a0">Gagal akses kamera.<br>Izinkan kamera, dan buka lewat HTTPS / localhost.</p>';
+        statusEl.textContent = 'Error kamera — pakai swipe layar / panah';
         statusEl.className = 'error';
+        // Tetap bisa pakai swipe & keyboard
+        setTimeout(() => loadingEl.classList.add('hidden'), 2000);
       }
+    }
+
+    // Swipe di layar HP sebagai cadangan ganti foto
+    function setupTouchSwipe() {
+      let startX = 0;
+      let startY = 0;
+      const el = document.body;
+      el.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        // Jangan ganggu panel foto
+        if (photoPanel.classList.contains('open')) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+      el.addEventListener('touchend', (e) => {
+        if (photoPanel.classList.contains('open')) return;
+        const t = e.changedTouches[0];
+        if (!t) return;
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+          if (dx < 0) changePhoto(1);
+          else changePhoto(-1);
+        }
+      }, { passive: true });
     }
 
     // ---- Keyboard cadangan (← → untuk ganti foto, test tanpa kamera) ----

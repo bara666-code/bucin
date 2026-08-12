@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kenangan 3D • Bucin Elegan</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #0a0a12;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #e8d5e0;
+    }
+    #canvas-container {
+      position: fixed; inset: 0;
+      z-index: 1;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Webcam preview kecil di pojok */
+    #webcam-wrap {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      width: 180px; height: 135px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 150, 180, 0.35);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 10;
+      background: #111;
+    }
+    #webcam {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    #webcam-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      transform: scaleX(-1);
+      pointer-events: none;
+    }
+
+    /* UI overlay */
+    #ui {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      pointer-events: none;
+      padding: 24px 28px;
+      background: linear-gradient(to bottom, rgba(10,10,18,0.75), transparent 120px);
+    }
+    #title {
+      font-size: 1.35rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #f0c4d4;
+      opacity: 0.95;
+    }
+    #subtitle {
+      font-size: 0.8rem;
+      color: #a88a98;
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+    #status {
+      position: fixed;
+      bottom: 24px; left: 28px;
+      font-size: 0.78rem;
+      color: #c9a0b0;
+      background: rgba(20, 12, 18, 0.7);
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,140,170,0.2);
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+    #status.ready { color: #9fe8c0; border-color: rgba(120,220,160,0.3); }
+    #status.error { color: #f0a0a0; }
+
+    /* Instruksi singkat */
+    #hint {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 15;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+    #hint h2 {
+      font-weight: 300;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+      color: #f5d0dc;
+      margin-bottom: 12px;
+    }
+    #hint p {
+      font-size: 0.95rem;
+      color: #b89aa8;
+      line-height: 1.6;
+      max-width: 360px;
+    }
+    #hint.hidden { opacity: 0; pointer-events: none; }
+
+    /* Loading */
+    #loading {
+      position: fixed; inset: 0;
+      background: #0a0a12;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100;
+      transition: opacity 0.6s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .loader {
+      width: 48px; height: 48px;
+      border: 2px solid rgba(255,160,190,0.2);
+      border-top-color: #e8a0b8;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: #c9a0b0; font-size: 0.9rem; letter-spacing: 0.05em; }
+
+    /* Pesan romantis */
+    #message-box {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      z-index: 18;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    #message-box.show { opacity: 1; }
+    #message-text {
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: #f0d4de;
+      letter-spacing: 0.03em;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.6);
+      background: rgba(18, 10, 16, 0.55);
+      padding: 16px 22px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 160, 190, 0.18);
+      backdrop-filter: blur(10px);
+    }
+    #message-from {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #c9a0b0;
+      letter-spacing: 0.08em;
+      font-style: italic;
+    }
+
+    /* Tombol musik */
+    #music-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 220px;
+      z-index: 25;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 160, 190, 0.35);
+      background: rgba(20, 12, 18, 0.75);
+      color: #f0c4d4;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+      pointer-events: auto;
+    }
+    #music-btn:hover {
+      background: rgba(40, 22, 32, 0.9);
+      border-color: rgba(255, 180, 200, 0.6);
+      transform: scale(1.08);
+    }
+    #music-btn.playing {
+      border-color: rgba(160, 230, 180, 0.5);
+      color: #a0e8c0;
+    }
+
+    /* Tombol kelola foto */
+    #photo-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 274px;
+      z-index: 25;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 160, 190, 0.35);
+      background: rgba(20, 12, 18, 0.75);
+      color: #f0c4d4;
+      font-size: 1.05rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+      pointer-events: auto;
+    }
+    #photo-btn:hover {
+      background: rgba(40, 22, 32, 0.9);
+      border-color: rgba(255, 180, 200, 0.6);
+      transform: scale(1.08);
+    }
+
+    /* Panel kelola foto */
+    #photo-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      width: min(420px, 92vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      background: rgba(16, 10, 14, 0.95);
+      border: 1px solid rgba(255, 160, 190, 0.25);
+      border-radius: 18px;
+      padding: 22px;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #photo-panel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    #photo-panel h3 {
+      font-weight: 400;
+      font-size: 1.05rem;
+      color: #f0c4d4;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    #photo-panel .hint-text {
+      font-size: 0.78rem;
+      color: #a88a98;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    #photo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .photo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,160,190,0.12);
+    }
+    .photo-thumb {
+      width: 56px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 6px;
+      background: #2a1a22;
+      flex-shrink: 0;
+    }
+    .photo-row span {
+      flex: 1;
+      font-size: 0.8rem;
+      color: #d0b0bc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .photo-row button {
+      border: none;
+      background: rgba(255,140,170,0.15);
+      color: #f0c4d4;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .photo-row button:hover { background: rgba(255,140,170,0.3); }
+    .photo-row button.danger {
+      background: rgba(220,80,100,0.2);
+      color: #f0a0b0;
+    }
+    .photo-row button.danger:hover { background: rgba(220,80,100,0.35); }
+    #photo-panel-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #photo-panel-actions button {
+      flex: 1;
+      min-width: 120px;
+      border: 1px solid rgba(255,160,190,0.3);
+      background: rgba(255,160,190,0.12);
+      color: #f0d0dc;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #photo-panel-actions button:hover {
+      background: rgba(255,160,190,0.25);
+    }
+    #photo-panel-close {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: transparent;
+      border: none;
+      color: #c9a0b0;
+      font-size: 1.3rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #photo-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    #photo-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #file-input { display: none; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="loader"></div>
+    <p>Memuat kamera & model AI...</p>
+  </div>
+
+  <div id="ui">
+    <div id="title">Kenangan Kita</div>
+    <div id="subtitle">Geser jari telunjuk untuk ganti foto</div>
+  </div>
+
+  <div id="hint">
+    <h2>Arahkan jari telunjuk ke kamera</h2>
+    <p>
+      <strong>Geser jari telunjuk</strong> ke kiri atau kanan<br>
+      untuk pindah ke foto berikutnya.<br><br>
+      Setiap foto akan <strong>berhenti di depan</strong>.
+    </p>
+  </div>
+
+  <!-- PESAN ROMANTIS (muncul setelah loading) -->
+  <div id="message-box">
+    <div id="message-text"></div>
+    <div id="message-from"></div>
+  </div>
+
+  <div id="status">Menunggu kamera...</div>
+
+  <!-- Tombol musik & kelola foto -->
+  <button id="photo-btn" title="Kelola foto">📷</button>
+  <button id="music-btn" title="Putar / Pause musik">♪</button>
+
+  <div id="photo-overlay"></div>
+  <div id="photo-panel">
+    <button id="photo-panel-close" title="Tutup">×</button>
+    <h3>Kelola Foto</h3>
+    <p class="hint-text">Upload foto dari HP/laptop. Foto tersimpan di browser ini dan tidak hilang saat di-refresh.</p>
+    <div id="photo-list"></div>
+    <div id="photo-panel-actions">
+      <button id="add-photo-btn">+ Tambah foto</button>
+      <button id="close-panel-btn">Selesai</button>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept="image/*" />
+
+  <div id="webcam-wrap">
+    <video id="webcam" playsinline autoplay muted></video>
+    <canvas id="webcam-canvas"></canvas>
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <!-- Audio element (lagu background) -->
+  <audio id="bg-music" loop preload="auto">
+    <!-- 
+      GANTI LAGU DI SINI:
+      1. Download lagu soft/romantic gratis dari Pixabay Music
+      2. Atau pakai link .mp3 langsung
+      3. Contoh di bawah bisa diganti
+    -->
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- MediaPipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <script>
+    // ============================================================
+    //  PENGATURAN MUDAH DIUBAH
+    // ============================================================
+
+    // 1. FOTO default (dipakai jika belum pernah upload)
+    //    Foto yang diupload lewat tombol 📷 tersimpan otomatis di browser
+    //    dan tetap ada saat refresh / buka ulang.
+    const DEFAULT_PHOTOS = [
+      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
+      "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
+      "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
+      "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&q=80",
+      "https://images.unsplash.com/photo-1518621012118-2e4e2546b6b9?w=800&q=80",
+      "https://images.unsplash.com/photo-1494774157368-9f8b2b3d0b0b?w=800&q=80"
+    ];
+
+    const STORAGE_KEY = 'bucin3d_photos_v1';
+
+    function loadSavedPhotos() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return DEFAULT_PHOTOS.slice();
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.warn('Gagal baca foto tersimpan:', e);
+      }
+      return DEFAULT_PHOTOS.slice();
+    }
+
+    function savePhotos() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
+        console.log('Foto disimpan (' + photos.length + ' buah)');
+      } catch (e) {
+        console.error('Gagal simpan foto (storage penuh?):', e);
+        alert('Gagal menyimpan foto. Coba kurangi jumlah/ukuran foto.');
+      }
+    }
+
+    // Kompres gambar jadi data-URL supaya bisa disimpan di localStorage
+    function fileToSavedDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const tempUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          const maxSide = 900;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxSide || h > maxSide) {
+            if (w > h) {
+              h = Math.round(h * (maxSide / w));
+              w = maxSide;
+            } else {
+              w = Math.round(w * (maxSide / h));
+              h = maxSide;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(tempUrl);
+          try {
+            resolve(canvas.toDataURL('image/jpeg', 0.72));
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(tempUrl);
+          reject(new Error('Gagal baca file gambar'));
+        };
+        img.src = tempUrl;
+      });
+    }
+
+    let photos = loadSavedPhotos();
+
+    // 2. PESAN ROMANTIS — ubah teks di sini
+    const loveMessage = {
+      text: "Di antara bintang dan kenangan,<br>kau tetap jadi tempatku pulang.<br>Terima kasih sudah ada.",
+      from: "— untukmu, selalu"
+    };
+
+    // 3. LAGU — ganti URL lagu di tag <audio> di atas (atau di sini)
+    //    Bisa pakai link .mp3 apapun (Pixabay, file sendiri, dll)
+
+    // ============================================================
+
+    // ---- State ----
+    let scene, camera, renderer, clock;
+    let photoMeshes = [];
+    let currentPhotoIndex = 0;
+    let targetRotationY = 0;
+    let targetRotationX = 0;
+    let currentRotationY = 0;
+    let currentRotationX = 0;
+    let particles;
+    let handDetected = false;
+    let lastHandX = 0.5, lastHandY = 0.5;
+    let swipeAccum = 0;
+    let canSwipe = true;      // true = boleh ganti foto
+    let isAnimating = false;  // true = sedang pindah foto
+    let hintHidden = false;
+
+    const statusEl = document.getElementById('status');
+    const hintEl = document.getElementById('hint');
+    const messageBox = document.getElementById('message-box');
+    const messageText = document.getElementById('message-text');
+    const messageFrom = document.getElementById('message-from');
+    const musicBtn = document.getElementById('music-btn');
+    const bgMusic = document.getElementById('bg-music');
+    const loadingEl = document.getElementById('loading');
+    const videoEl = document.getElementById('webcam');
+    const webcamCanvas = document.getElementById('webcam-canvas');
+    const webcamCtx = webcamCanvas.getContext('2d');
+    const photoBtn = document.getElementById('photo-btn');
+    const photoPanel = document.getElementById('photo-panel');
+    const photoOverlay = document.getElementById('photo-overlay');
+    const photoList = document.getElementById('photo-list');
+    const fileInput = document.getElementById('file-input');
+    let pendingReplaceIndex = -1; // -1 = tambah baru
+
+    // ---- Init Three.js ----
+    function initThree() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x0a0a12, 0.035);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 0.3, 6.5);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x0a0a12, 1);
+      container.appendChild(renderer.domElement);
+
+      clock = new THREE.Clock();
+
+      // Soft ambient + romantic point lights
+      const ambient = new THREE.AmbientLight(0x2a1a28, 0.6);
+      scene.add(ambient);
+
+      const light1 = new THREE.PointLight(0xff9ec0, 1.4, 20);
+      light1.position.set(3, 2, 4);
+      scene.add(light1);
+
+      const light2 = new THREE.PointLight(0xa0c0ff, 0.7, 18);
+      light2.position.set(-3, -1, 3);
+      scene.add(light2);
+
+      const light3 = new THREE.PointLight(0xffd0e0, 0.5, 12);
+      light3.position.set(0, 3, -2);
+      scene.add(light3);
+
+      createParticles();
+      createPhotoGallery();
+      createSubtleDecor();
+
+      window.addEventListener('resize', onResize);
+      animate();
+    }
+
+    // Partikel halus (bintang / debu romantis)
+    function createParticles() {
+      const count = 600;
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      for (let i = 0; i < count; i++) {
+        positions[i * 3]     = (Math.random() - 0.5) * 18;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 12;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 14 - 2;
+
+        const t = Math.random();
+        colors[i * 3]     = 0.85 + t * 0.15;
+        colors[i * 3 + 1] = 0.55 + t * 0.25;
+        colors[i * 3 + 2] = 0.65 + t * 0.2;
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: 0.035,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.7,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+
+      particles = new THREE.Points(geo, mat);
+      scene.add(particles);
+    }
+
+    // Galeri foto 3D — kartu dengan sisi DEPAN & BELAKANG
+    function createPhotoGallery() {
+      const radius = 3.2;
+
+      photos.forEach((url, i) => {
+        const angle = (i / photos.length) * Math.PI * 2;
+        const group = new THREE.Group();
+
+        const op = i === 0 ? 1.0 : 0.5;
+
+        // Material depan
+        const frontMat = new THREE.MeshStandardMaterial({
+          color: 0x4a3040,
+          roughness: 0.35,
+          metalness: 0.05,
+          transparent: true,
+          opacity: op,
+          side: THREE.FrontSide
+        });
+        // Material belakang (foto yang sama)
+        const backMat = new THREE.MeshStandardMaterial({
+          color: 0x4a3040,
+          roughness: 0.35,
+          metalness: 0.05,
+          transparent: true,
+          opacity: op,
+          side: THREE.FrontSide
+        });
+
+        const planeGeo = new THREE.PlaneGeometry(1.8, 1.2);
+
+        // Sisi depan
+        const frontMesh = new THREE.Mesh(planeGeo, frontMat);
+        frontMesh.position.z = 0.025;
+        group.add(frontMesh);
+
+        // Sisi belakang (diputar 180°)
+        const backMesh = new THREE.Mesh(planeGeo.clone(), backMat);
+        backMesh.position.z = -0.025;
+        backMesh.rotation.y = Math.PI;
+        group.add(backMesh);
+
+        // Tepi kartu (tebal tipis)
+        const edgeGeo = new THREE.BoxGeometry(1.8, 1.2, 0.05);
+        const edgeMat = new THREE.MeshStandardMaterial({
+          color: 0x2a1a22,
+          roughness: 0.7,
+          metalness: 0.05
+        });
+        // Hanya pakai sisi tepi: sembunyikan +z/-z dengan material transparan
+        const inv = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+        const edgeMesh = new THREE.Mesh(edgeGeo, [edgeMat, edgeMat, edgeMat, edgeMat, inv, inv]);
+        group.add(edgeMesh);
+
+        // Frame
+        const frameGeo = new THREE.PlaneGeometry(1.95, 1.35);
+        const frameMat = new THREE.MeshBasicMaterial({
+          color: 0x1a1218,
+          side: THREE.DoubleSide
+        });
+        const frameF = new THREE.Mesh(frameGeo, frameMat);
+        frameF.position.z = 0.02;
+        group.add(frameF);
+        const frameB = new THREE.Mesh(frameGeo.clone(), frameMat.clone());
+        frameB.position.z = -0.02;
+        frameB.rotation.y = Math.PI;
+        group.add(frameB);
+
+        // Glow
+        const glowGeo = new THREE.PlaneGeometry(2.05, 1.45);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: 0xffb0c8,
+          transparent: true,
+          opacity: 0.14,
+          side: THREE.DoubleSide
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        group.add(glow);
+
+        group.position.set(
+          Math.sin(angle) * radius,
+          0,
+          Math.cos(angle) * radius
+        );
+        group.lookAt(0, 0, 0);
+        group.userData = { index: i, angle, frontMat, backMat, material: frontMat };
+
+        scene.add(group);
+        photoMeshes.push(group);
+
+        loadPhotoTexture(url, [frontMat, backMat], i);
+      });
+
+      currentRotationY = 0;
+      if (photoMeshes[0]) photoMeshes[0].scale.setScalar(1.22);
+    }
+
+    function loadPhotoTexture(url, materials, index) {
+      const mats = Array.isArray(materials) ? materials : [materials];
+      const img = new Image();
+      if (/^https?:\/\//i.test(url)) {
+        img.crossOrigin = 'anonymous';
+      }
+
+      img.onload = function () {
+        const tex = new THREE.Texture(img);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.needsUpdate = true;
+
+        mats.forEach((material) => {
+          material.map = tex;
+          material.color.set(0xffffff);
+          material.needsUpdate = true;
+        });
+        console.log('✓ Foto ' + (index + 1) + ' loaded (depan+belakang):', url);
+      };
+
+      img.onerror = function () {
+        console.error('✗ GAGAL load foto ' + (index + 1) + ':', url);
+        mats.forEach((material) => {
+          material.color.set(0x6a4050);
+          material.needsUpdate = true;
+        });
+      };
+
+      if (/^https?:\/\//i.test(url)) {
+        img.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+      } else {
+        img.src = url;
+      }
+    }
+
+    // Dekorasi abstrak ringan (ring / orbit)
+    function createSubtleDecor() {
+      // Ring horizontal
+      const ringGeo = new THREE.TorusGeometry(3.6, 0.015, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xffa0b8,
+        transparent: true,
+        opacity: 0.25
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      scene.add(ring);
+
+      // Ring miring
+      const ring2 = new THREE.Mesh(
+        new THREE.TorusGeometry(3.9, 0.01, 16, 100),
+        new THREE.MeshBasicMaterial({ color: 0xc0a0ff, transparent: true, opacity: 0.15 })
+      );
+      ring2.rotation.x = Math.PI / 2.4;
+      ring2.rotation.y = 0.3;
+      scene.add(ring2);
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // ---- Hand Tracking ----
+    function onHandResults(results) {
+      // Draw landmarks di preview webcam
+      webcamCanvas.width = videoEl.videoWidth;
+      webcamCanvas.height = videoEl.videoHeight;
+      webcamCtx.save();
+      webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(webcamCtx, landmarks, HAND_CONNECTIONS, { color: '#ff9eb8', lineWidth: 2 });
+          drawLandmarks(webcamCtx, landmarks, { color: '#ffffff', lineWidth: 1, radius: 2 });
+        }
+      }
+      webcamCtx.restore();
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+
+        // === SENSOR JARI TELUNJUK (landmark 8) ===
+        const tip = landmarks[8];
+        const x = tip.x;
+        const y = tip.y;
+
+        // Kalau baru deteksi (sebelumnya tidak ada tangan), jangan hitung swipe dulu
+        const justAppeared = !handDetected;
+        handDetected = true;
+        statusEl.textContent = 'Jari telunjuk terdeteksi • Geser kiri/kanan';
+        statusEl.className = 'ready';
+
+        if (!hintHidden) {
+          hintEl.classList.add('hidden');
+          hintHidden = true;
+        }
+
+        // Vertical tilt
+        targetRotationX = (0.5 - y) * 0.85;
+
+        // === Swipe detection berbasis akumulasi (lebih stabil) ===
+        if (justAppeared) {
+          lastHandX = x;
+          lastHandY = y;
+          swipeAccum = 0;
+        }
+
+        const dx = x - lastHandX;
+        lastHandX = x;
+        lastHandY = y;
+
+        // Deteksi geser — satu foto per geser, perlahan
+        if (Math.abs(dx) > 0.002) {
+          swipeAccum += dx * 1.6;
+        } else {
+          swipeAccum *= 0.55;
+        }
+
+        const SWIPE_THRESHOLD = 0.035;
+        if (canSwipe && !isAnimating) {
+          if (swipeAccum > SWIPE_THRESHOLD) {
+            changePhoto(1);
+            swipeAccum = 0;
+          } else if (swipeAccum < -SWIPE_THRESHOLD) {
+            changePhoto(-1);
+            swipeAccum = 0;
+          }
+        }
+      } else {
+        handDetected = false;
+        statusEl.textContent = 'Arahkan jari telunjuk ke kamera';
+        statusEl.className = '';
+        targetRotationX *= 0.9;
+        swipeAccum = 0;
+        lastHandX = 0.5;
+      }
+    }
+
+    function changePhoto(dir) {
+      if (isAnimating || photos.length === 0) return;
+      isAnimating = true;
+      canSwipe = false;
+
+      currentPhotoIndex = (currentPhotoIndex + dir + photos.length) % photos.length;
+
+      photoMeshes.forEach((m, i) => {
+        const isActive = i === currentPhotoIndex;
+        m.scale.setScalar(isActive ? 1.22 : 0.88);
+        const op = isActive ? 1.0 : 0.48;
+        [m.userData.frontMat, m.userData.backMat, m.userData.material].forEach((mat) => {
+          if (mat) {
+            mat.opacity = op;
+            mat.transparent = true;
+            mat.needsUpdate = true;
+          }
+        });
+      });
+    }
+
+    // ---- Kelola foto dari web ----
+    function openPhotoPanel() {
+      renderPhotoList();
+      photoPanel.classList.add('open');
+      photoOverlay.classList.add('open');
+    }
+    function closePhotoPanel() {
+      photoPanel.classList.remove('open');
+      photoOverlay.classList.remove('open');
+    }
+
+    function renderPhotoList() {
+      photoList.innerHTML = '';
+      photos.forEach((url, i) => {
+        const row = document.createElement('div');
+        row.className = 'photo-row';
+        const name = (url.startsWith('data:') || url.startsWith('blob:'))
+          ? 'Tersimpan di browser'
+          : (url.split('/').pop() || 'Foto ' + (i + 1)).substring(0, 28);
+        row.innerHTML =
+          '<img class="photo-thumb" src="' + url + '" alt="foto' + (i + 1) + '" />' +
+          '<span>Foto ' + (i + 1) + ' — ' + name + '</span>' +
+          '<button type="button" data-action="replace" data-i="' + i + '">Ganti</button>' +
+          '<button type="button" class="danger" data-action="remove" data-i="' + i + '">Hapus</button>';
+        photoList.appendChild(row);
+      });
+      if (photos.length === 0) {
+        photoList.innerHTML = '<p class="hint-text">Belum ada foto. Klik "+ Tambah foto".</p>';
+      }
+    }
+
+    function applyTextureToMesh(index, url) {
+      const mesh = photoMeshes[index];
+      if (!mesh) return;
+      const mats = [];
+      if (mesh.userData.frontMat) mats.push(mesh.userData.frontMat);
+      if (mesh.userData.backMat) mats.push(mesh.userData.backMat);
+      if (mats.length === 0 && mesh.userData.material) mats.push(mesh.userData.material);
+      if (mats.length) loadPhotoTexture(url, mats, index);
+    }
+
+    function rebuildGallery() {
+      // Hapus mesh lama
+      photoMeshes.forEach((m) => {
+        scene.remove(m);
+        if (m.geometry) m.geometry.dispose();
+      });
+      photoMeshes = [];
+      currentPhotoIndex = Math.min(currentPhotoIndex, Math.max(photos.length - 1, 0));
+      currentRotationY = photos.length ? -currentPhotoIndex * ((Math.PI * 2) / photos.length) : 0;
+      if (photos.length > 0) {
+        createPhotoGallery();
+      }
+      renderPhotoList();
+    }
+
+    photoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPhotoPanel();
+    });
+    document.getElementById('photo-panel-close').addEventListener('click', closePhotoPanel);
+    document.getElementById('close-panel-btn').addEventListener('click', closePhotoPanel);
+    photoOverlay.addEventListener('click', closePhotoPanel);
+
+    document.getElementById('add-photo-btn').addEventListener('click', () => {
+      pendingReplaceIndex = -1;
+      fileInput.value = '';
+      fileInput.click();
+    });
+
+    photoList.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const i = parseInt(btn.getAttribute('data-i'), 10);
+      const action = btn.getAttribute('data-action');
+      if (action === 'replace') {
+        pendingReplaceIndex = i;
+        fileInput.value = '';
+        fileInput.click();
+      } else if (action === 'remove') {
+        if (photos.length <= 1) {
+          alert('Minimal 1 foto harus ada.');
+          return;
+        }
+        photos.splice(i, 1);
+        savePhotos();
+        rebuildGallery();
+      }
+    });
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Pilih file gambar (jpg, png, dll).');
+        return;
+      }
+
+      statusEl.textContent = 'Menyimpan foto...';
+      try {
+        // Kompres & simpan sebagai data-URL agar tetap ada saat reload
+        const dataUrl = await fileToSavedDataUrl(file);
+
+        if (pendingReplaceIndex >= 0 && pendingReplaceIndex < photos.length) {
+          photos[pendingReplaceIndex] = dataUrl;
+          applyTextureToMesh(pendingReplaceIndex, dataUrl);
+          renderPhotoList();
+        } else {
+          photos.push(dataUrl);
+          rebuildGallery();
+        }
+        savePhotos();
+        pendingReplaceIndex = -1;
+        statusEl.textContent = 'Foto tersimpan ✓';
+        statusEl.className = 'ready';
+      } catch (err) {
+        console.error(err);
+        alert('Gagal memproses foto. Coba file lain.');
+        statusEl.textContent = 'Gagal simpan foto';
+        statusEl.className = 'error';
+      }
+    });
+
+    // ---- Animation loop ----
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      const dt = clock.getDelta();
+
+      // Target sudut dari index foto (snap, tidak bergulir bebas)
+      const step = (Math.PI * 2) / Math.max(photos.length, 1);
+      const desiredY = -currentPhotoIndex * step;
+
+      let diffY = desiredY - currentRotationY;
+      while (diffY > Math.PI) diffY -= Math.PI * 2;
+      while (diffY < -Math.PI) diffY += Math.PI * 2;
+
+      // Gerak perlahan ke foto berikutnya
+      currentRotationY += diffY * 0.05;
+      currentRotationX += (targetRotationX - currentRotationX) * 0.1;
+
+      // Setelah hampir sampai, izinkan swipe lagi
+      if (Math.abs(diffY) < 0.08) {
+        currentRotationY = desiredY; // snap tepat
+        isAnimating = false;
+        canSwipe = true;
+      }
+
+      // Posisikan setiap foto
+      photoMeshes.forEach((mesh) => {
+        const baseAngle = mesh.userData.angle + currentRotationY;
+        const radius = 3.2;
+        mesh.position.x = Math.sin(baseAngle) * radius;
+        mesh.position.z = Math.cos(baseAngle) * radius;
+        mesh.position.y = Math.sin(t * 0.35 + mesh.userData.index) * 0.06 + currentRotationX * 0.35;
+        mesh.lookAt(0, mesh.position.y * 0.15, 0);
+      });
+
+      if (particles) {
+        particles.rotation.y = t * 0.03;
+        particles.rotation.x = Math.sin(t * 0.1) * 0.05;
+      }
+
+      camera.position.y = 0.3 + Math.sin(t * 0.25) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    }
+
+    // ---- Start MediaPipe + Camera ----
+    async function start() {
+      initThree();
+
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults(onHandResults);
+
+      const cameraUtils = new Camera(videoEl, {
+        onFrame: async () => {
+          await hands.send({ image: videoEl });
+        },
+        width: 640,
+        height: 480
+      });
+
+      try {
+        await cameraUtils.start();
+        loadingEl.classList.add('hidden');
+        statusEl.textContent = 'Kamera siap • Arahkan tangan';
+
+        // Tampilkan pesan romantis
+        messageText.innerHTML = loveMessage.text;
+        messageFrom.textContent = loveMessage.from;
+        setTimeout(() => {
+          messageBox.classList.add('show');
+        }, 900);
+
+        // Auto hide hint after 6s even if no hand
+        setTimeout(() => {
+          if (!hintHidden) {
+            hintEl.classList.add('hidden');
+            hintHidden = true;
+          }
+        }, 7000);
+      } catch (err) {
+        console.error(err);
+        loadingEl.innerHTML = '<p style="color:#f0a0a0">Gagal akses kamera.<br>Pastikan izin kamera diizinkan.</p>';
+        statusEl.textContent = 'Error kamera';
+        statusEl.className = 'error';
+      }
+    }
+
+    // ---- Keyboard cadangan (← → untuk ganti foto, test tanpa kamera) ----
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        changePhoto(1);
+      } else if (e.key === 'ArrowRight') {
+        changePhoto(-1);
+      }
+    });
+
+    // ---- Musik controls ----
+    let isPlaying = false;
+
+    async function playMusic() {
+      try {
+        bgMusic.volume = 0.45;
+        await bgMusic.play();
+        musicBtn.textContent = '❚❚';
+        musicBtn.classList.add('playing');
+        isPlaying = true;
+        return true;
+      } catch (e) {
+        console.warn('Autoplay diblokir browser:', e);
+        return false;
+      }
+    }
+
+    function pauseMusic() {
+      bgMusic.pause();
+      musicBtn.textContent = '♪';
+      musicBtn.classList.remove('playing');
+      isPlaying = false;
+    }
+
+    musicBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (isPlaying) {
+        pauseMusic();
+      } else {
+        await playMusic();
+      }
+    });
+
+    // Coba autoplay setelah loading selesai.
+    // Kalau browser memblokir, lagu akan otomatis diputar
+    // saat user klik/tap pertama kali di mana saja.
+    async function tryAutoplay() {
+      const success = await playMusic();
+      if (!success) {
+        const startOnInteract = async () => {
+          if (!isPlaying) await playMusic();
+          document.removeEventListener('click', startOnInteract);
+          document.removeEventListener('touchstart', startOnInteract);
+        };
+        document.addEventListener('click', startOnInteract, { once: true });
+        document.addEventListener('touchstart', startOnInteract, { once: true });
+      }
+    }
+
+    // Jalankan
+    start().then(() => {
+      setTimeout(tryAutoplay, 1200);
+    });
+  </script>
+</body>
+</html>

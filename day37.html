@@ -761,7 +761,7 @@
     // ===================== CONFIG =====================
     const CONFIG = {
       maxPhotos: 10,
-      photoSize: 1.55,
+      photoSize: 1.85,
       handSmooth: 0.2,
       panSensitivity: 4.5,
       scrollSensitivity: 0.04,
@@ -1087,8 +1087,8 @@
 
     // Canvas photo textures
     const photoColors = [
-      [0x2a1a28, 0x4a3048], [0x1e1a2e, 0x3a3050], [0x221820, 0x3e2a38],
-      [0x1a1e28, 0x2e3848], [0x281a22, 0x483040], [0x1c1a26, 0x342e44]
+      [0x4a2a40, 0x6a4060], [0x3a2a50, 0x5a4070], [0x4a3040, 0x6a4a58],
+      [0x2a3a50, 0x4a5a70], [0x502a40, 0x704a60], [0x3a2a48, 0x5a4a68]
     ];
 
     function createCanvasTexture(index, label) {
@@ -1102,22 +1102,24 @@
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 512, 640);
 
-      const vg = ctx.createRadialGradient(256, 320, 60, 256, 320, 400);
-      vg.addColorStop(0, 'rgba(0,0,0,0)');
-      vg.addColorStop(1, 'rgba(0,0,0,0.5)');
-      ctx.fillStyle = vg;
+      // Soft glow center
+      const glow = ctx.createRadialGradient(256, 300, 20, 256, 300, 280);
+      glow.addColorStop(0, 'rgba(255,200,220,0.25)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
       ctx.fillRect(0, 0, 512, 640);
 
-      ctx.fillStyle = 'rgba(255,230,240,0.5)';
-      ctx.font = '300 20px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,235,245,0.75)';
+      ctx.font = '300 26px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(label || 'memory', 256, 300);
-      ctx.fillStyle = 'rgba(255,220,235,0.22)';
-      ctx.font = '400 13px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,220,235,0.45)';
+      ctx.font = '400 16px Inter, sans-serif';
       ctx.fillText(String(index + 1), 256, 340);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.minFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
       return tex;
     }
 
@@ -1152,30 +1154,39 @@
     let activeFotoSlot = -1;
 
     async function createDefaultPhotos() {
-      const count = Math.min(PHOTO_POSITIONS.length, PHOTO_URLS.length || PHOTO_POSITIONS.length);
-      for (let i = 0; i < count; i++) {
-        const url = PHOTO_URLS[i] || null;
-        if (url) photoPreviewUrls[i] = url;
-        const tex = await createPhotoTexture(i, url);
-        addPhoto(tex, PHOTO_POSITIONS[i], i);
+      try {
+        const count = PHOTO_POSITIONS.length;
+        for (let i = 0; i < count; i++) {
+          const url = (PHOTO_URLS && PHOTO_URLS[i]) ? PHOTO_URLS[i] : null;
+          if (url) photoPreviewUrls[i] = url;
+          const tex = await createPhotoTexture(i, url);
+          addPhoto(tex, PHOTO_POSITIONS[i], i);
+        }
+        console.log('Fotos loaded:', photos.length);
+      } catch (err) {
+        console.error('Gagal memuat foto:', err);
       }
     }
 
     async function setPhotoAtSlot(index, url) {
       if (index < 0 || index >= 8) return;
-      const tex = await createPhotoTexture(index, url);
-      if (photos[index]) {
-        const mesh = photos[index].children[0];
-        if (mesh && mesh.material) {
-          if (mesh.material.map) mesh.material.map.dispose();
-          mesh.material.map = tex;
-          mesh.material.needsUpdate = true;
+      try {
+        const tex = await createPhotoTexture(index, url);
+        if (photos[index]) {
+          const mesh = photos[index].children[0];
+          if (mesh && mesh.material) {
+            if (mesh.material.map) mesh.material.map.dispose();
+            mesh.material.map = tex;
+            mesh.material.needsUpdate = true;
+          }
+        } else if (PHOTO_POSITIONS[index]) {
+          addPhoto(tex, PHOTO_POSITIONS[index], index);
         }
-      } else if (PHOTO_POSITIONS[index]) {
-        addPhoto(tex, PHOTO_POSITIONS[index], index);
+        photoPreviewUrls[index] = url;
+        updateFotoGridUI();
+      } catch (err) {
+        console.error('Gagal set foto:', err);
       }
-      photoPreviewUrls[index] = url;
-      updateFotoGridUI();
     }
 
     function addPhoto(texture, pos, slotIndex) {
@@ -1183,24 +1194,30 @@
       const h = CONFIG.photoSize / 0.8;
       const group = new THREE.Group();
 
+      // MeshBasicMaterial = selalu terlihat (tidak tergantung cahaya)
       const mesh = new THREE.Mesh(
         new THREE.PlaneGeometry(w, h),
-        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.75, metalness: 0.04, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          toneMapped: false
+        })
       );
+      mesh.position.z = 0.01;
       group.add(mesh);
 
       const frame = new THREE.Mesh(
-        new THREE.PlaneGeometry(w + 0.09, h + 0.09),
-        new THREE.MeshBasicMaterial({ color: 0x161018, side: THREE.DoubleSide })
+        new THREE.PlaneGeometry(w + 0.1, h + 0.1),
+        new THREE.MeshBasicMaterial({ color: 0x1a1218, side: THREE.DoubleSide })
       );
-      frame.position.z = -0.012;
+      frame.position.z = 0;
       group.add(frame);
 
       const border = new THREE.LineSegments(
-        new THREE.EdgesGeometry(new THREE.PlaneGeometry(w + 0.07, h + 0.07)),
-        new THREE.LineBasicMaterial({ color: 0xd0a0b8, transparent: true, opacity: 0.32 })
+        new THREE.EdgesGeometry(new THREE.PlaneGeometry(w + 0.08, h + 0.08)),
+        new THREE.LineBasicMaterial({ color: 0xe0b0c8, transparent: true, opacity: 0.45 })
       );
-      border.position.z = 0.006;
+      border.position.z = 0.015;
       group.add(border);
 
       group.position.set(pos.x, pos.y, pos.z);
@@ -1214,7 +1231,14 @@
       };
 
       scene.add(group);
-      if (typeof slotIndex === 'number' && slotIndex < photos.length) {
+
+      // Selalu push berurutan saat init; ganti jika slot sudah ada
+      if (typeof slotIndex === 'number' && photos[slotIndex]) {
+        scene.remove(photos[slotIndex]);
+        photos[slotIndex] = group;
+      } else if (typeof slotIndex === 'number' && slotIndex === photos.length) {
+        photos.push(group);
+      } else if (typeof slotIndex === 'number') {
         photos[slotIndex] = group;
       } else {
         photos.push(group);
@@ -1336,7 +1360,7 @@
       nearestPhoto = null;
       let minD = GRAB_RANGE;
       photos.forEach(p => {
-        if (p === grabbedPhoto) return;
+        if (!p || p === grabbedPhoto) return;
         const d = p.position.distanceTo(handWorldPos);
         if (d < minD) {
           minD = d;
@@ -1346,6 +1370,7 @@
 
       // Highlight foto terdekat (sedikit membesar + border lebih terang)
       photos.forEach(p => {
+        if (!p) return;
         const isNear = p === nearestPhoto && !grabbedPhoto;
         const isHeld = p === grabbedPhoto;
         const targetScale = isHeld ? 1.12 : (isNear ? 1.06 : 1.0);
@@ -1536,13 +1561,18 @@
       camera.position.y += (targetCamY - camera.position.y) * 0.065;
       camera.lookAt(camera.position.x * 0.28, camera.position.y * 0.18, 0);
 
-      // Photos float
+      // Photos float + selalu menghadap kamera
       photos.forEach((p) => {
+        if (!p) return;
         if (p !== grabbedPhoto) {
           const phase = p.userData.floatPhase;
           p.position.y = p.userData.baseY + Math.sin(t * 0.5 + phase) * 0.13;
-          p.rotation.z = Math.sin(t * 0.28 + phase) * 0.028;
-          p.lookAt(camera.position.x * 0.35, p.position.y, camera.position.z);
+          // Billboard: foto selalu menghadap kamera (terlihat jelas)
+          p.quaternion.copy(camera.quaternion);
+          p.rotateZ(Math.sin(t * 0.28 + phase) * 0.028);
+        } else {
+          // Saat digeser tetap menghadap kamera
+          p.quaternion.copy(camera.quaternion);
         }
       });
 

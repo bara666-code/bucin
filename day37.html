@@ -289,6 +289,7 @@
     let handDetected = false;
     let lastHandX = 0.5, lastHandY = 0.5;
     let swipeCooldown = 0;
+    let swipeAccum = 0;       // akumulasi gerakan horizontal
     let hintHidden = false;
 
     const statusEl = document.getElementById('status');
@@ -524,13 +525,15 @@
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
 
-        // === SENSOR JARI TELUNJUK (landmark 8 = ujung jari telunjuk) ===
+        // === SENSOR JARI TELUNJUK (landmark 8) ===
         const tip = landmarks[8];
-        const x = tip.x; // 0..1
-        const y = tip.y; // 0..1
+        const x = tip.x;
+        const y = tip.y;
 
+        // Kalau baru deteksi (sebelumnya tidak ada tangan), jangan hitung swipe dulu
+        const justAppeared = !handDetected;
         handDetected = true;
-        statusEl.textContent = 'Jari telunjuk terdeteksi • Geser untuk ganti foto';
+        statusEl.textContent = 'Jari telunjuk terdeteksi • Geser kiri/kanan';
         statusEl.className = 'ready';
 
         if (!hintHidden) {
@@ -538,54 +541,56 @@
           hintHidden = true;
         }
 
-        // Vertical tilt lembut
-        const mappedY = (0.5 - y) * 1.2;
-        targetRotationX = mappedY * 0.7;
+        // Vertical tilt
+        targetRotationX = (0.5 - y) * 0.85;
 
-        // === Deteksi swipe yang lebih stabil ===
-        // Update lastHandX dengan cerdas supaya bisa digeser berkali-kali
-        const dx = x - lastHandX;
-
-        if (swipeCooldown <= 0) {
-          if (dx > 0.06) {
-            changePhoto(1);
-            swipeCooldown = 380;
-            lastHandX = x; // reset acuan setelah ganti
-          } else if (dx < -0.06) {
-            changePhoto(-1);
-            swipeCooldown = 380;
-            lastHandX = x;
-          } else if (Math.abs(dx) < 0.012) {
-            // Jari diam → update acuan biar swipe berikutnya bersih
-            lastHandX = x;
-          }
-        } else {
-          // Saat cooldown, ikuti posisi jari
+        // === Swipe detection berbasis akumulasi (lebih stabil) ===
+        if (justAppeared) {
           lastHandX = x;
+          lastHandY = y;
+          swipeAccum = 0;
         }
+
+        const dx = x - lastHandX;
+        lastHandX = x;
         lastHandY = y;
+
+        // Abaikan noise kecil
+        if (Math.abs(dx) > 0.004) {
+          swipeAccum += dx;
+        } else {
+          // Jari hampir diam → pelan-pelan reset akumulasi
+          swipeAccum *= 0.7;
+        }
+
+        // Trigger ganti foto — TANPA cooldown, bisa digeser terus-menerus
+        const SWIPE_THRESHOLD = 0.10;
+        if (swipeAccum > SWIPE_THRESHOLD) {
+          changePhoto(1);   // geser ke kiri (mirror) → next
+          swipeAccum = 0;
+        } else if (swipeAccum < -SWIPE_THRESHOLD) {
+          changePhoto(-1);  // geser ke kanan → prev
+          swipeAccum = 0;
+        }
       } else {
         handDetected = false;
         statusEl.textContent = 'Arahkan jari telunjuk ke kamera';
         statusEl.className = '';
         targetRotationX *= 0.9;
-        lastHandX = 0.5; // reset saat tangan hilang
+        swipeAccum = 0;
+        lastHandX = 0.5;
       }
     }
 
     function changePhoto(dir) {
       currentPhotoIndex = (currentPhotoIndex + dir + photos.length) % photos.length;
 
-      // Target sudut: foto aktif selalu di depan kamera
-      const step = (Math.PI * 2) / photos.length;
-      targetRotationY = -currentPhotoIndex * step;
-
       // Highlight foto aktif (depan & belakang)
       photoMeshes.forEach((m, i) => {
         const isActive = i === currentPhotoIndex;
-        m.scale.setScalar(isActive ? 1.2 : 0.88);
+        m.scale.setScalar(isActive ? 1.22 : 0.88);
 
-        const op = isActive ? 1.0 : 0.5;
+        const op = isActive ? 1.0 : 0.48;
         if (m.userData.frontMat) {
           m.userData.frontMat.opacity = op;
           m.userData.frontMat.transparent = true;
@@ -605,24 +610,24 @@
       const t = clock.getElapsedTime();
       const dt = clock.getDelta();
 
-      // Smooth lerp ke posisi snap (setiap foto berhenti di depan)
-      // Gunakan shortest path agar rotasi tidak muter jauh
-      let diffY = targetRotationY - currentRotationY;
-      // Normalisasi ke -π .. π supaya ambil jalur terpendek
+      // Hitung target sudut dari index foto (selalu akurat, tidak drift)
+      const step = (Math.PI * 2) / photos.length;
+      const desiredY = -currentPhotoIndex * step;
+
+      // Shortest path rotation
+      let diffY = desiredY - currentRotationY;
       while (diffY > Math.PI) diffY -= Math.PI * 2;
       while (diffY < -Math.PI) diffY += Math.PI * 2;
-      currentRotationY += diffY * 0.12;
+      currentRotationY += diffY * 0.14;
       currentRotationX += (targetRotationX - currentRotationX) * 0.12;
 
-      // Rotasi seluruh galeri — foto aktif selalu di depan
+      // Posisikan setiap foto di lingkaran
       photoMeshes.forEach((mesh) => {
         const baseAngle = mesh.userData.angle + currentRotationY;
         const radius = 3.2;
         mesh.position.x = Math.sin(baseAngle) * radius;
         mesh.position.z = Math.cos(baseAngle) * radius;
         mesh.position.y = Math.sin(t * 0.35 + mesh.userData.index) * 0.06 + currentRotationX * 0.35;
-
-        // Hadapkan ke pusat (depan & belakang tetap terlihat karena DoubleSide)
         mesh.lookAt(0, mesh.position.y * 0.2, 0);
       });
 

@@ -203,13 +203,13 @@
 
   <div id="ui">
     <div id="title">Kenangan Kita</div>
-    <div id="subtitle">Gerakkan tangan untuk berinteraksi</div>
+    <div id="subtitle">Gerakkan jari telunjuk untuk berinteraksi</div>
   </div>
 
   <div id="hint">
-    <h2>Arahkan tangan ke kamera</h2>
+    <h2>Arahkan jari telunjuk ke kamera</h2>
     <p>
-      Gerakkan tangan kiri-kanan / atas-bawah<br>
+      Gerakkan <strong>jari telunjuk</strong> kiri-kanan / atas-bawah<br>
       untuk memutar galeri foto.<br><br>
       <strong>Geser cepat</strong> ke kiri/kanan<br>
       untuk mengganti foto.
@@ -259,7 +259,7 @@
 
     // 1. FOTO — ganti URL sesuai keinginan
     const photos = [
-      "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
+      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
       "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
       "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
       "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&q=80",
@@ -491,13 +491,14 @@
 
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
-        // Gunakan wrist (0) atau middle of palm (9) untuk stabilitas
-        const palm = landmarks[9]; // middle finger base ≈ center palm
-        const x = palm.x; // 0..1 (kanan ke kiri karena mirrored)
-        const y = palm.y; // 0..1
+
+        // === SENSOR JARI TELUNJUK (landmark 8 = ujung jari telunjuk) ===
+        const tip = landmarks[8];
+        const x = tip.x; // 0..1
+        const y = tip.y; // 0..1
 
         handDetected = true;
-        statusEl.textContent = 'Tangan terdeteksi • Gerakkan untuk kontrol';
+        statusEl.textContent = 'Jari telunjuk terdeteksi • Gerakkan untuk kontrol';
         statusEl.className = 'ready';
 
         if (!hintHidden) {
@@ -505,37 +506,34 @@
           hintHidden = true;
         }
 
-        // Map posisi tangan ke rotasi galeri
-        // x: 0 (kanan) → 1 (kiri) karena mirror
-        const mappedX = (0.5 - x) * 2; // -1 .. 1
-        const mappedY = (0.5 - y) * 2;
+        // Mapping lebih responsif (lebih sensitif)
+        // x: 0 (kanan) → 1 (kiri) karena mirror webcam
+        const mappedX = (0.5 - x) * 2.4; // -1.2 .. 1.2  → lebih lebar
+        const mappedY = (0.5 - y) * 1.4; // lebih responsif vertikal
 
-        targetRotationY = mappedX * 1.8; // horizontal
-        targetRotationX = mappedY * 0.6; // vertical (lebih lembut)
+        targetRotationY = mappedX * 2.2;  // horizontal lebih cepat
+        targetRotationX = mappedY * 0.9;  // vertikal lebih responsif
 
-        // Deteksi swipe (kecepatan horizontal)
+        // Deteksi swipe lebih sensitif (pakai ujung jari)
         const dx = x - lastHandX;
-        const now = performance.now();
         if (swipeCooldown <= 0) {
-          if (dx > 0.12) {
-            // geser ke kiri (karena mirror) → next photo
+          if (dx > 0.08) {          // threshold lebih rendah = lebih mudah
             changePhoto(1);
-            swipeCooldown = 600;
-          } else if (dx < -0.12) {
-            // geser ke kanan → prev photo
+            swipeCooldown = 450;
+          } else if (dx < -0.08) {
             changePhoto(-1);
-            swipeCooldown = 600;
+            swipeCooldown = 450;
           }
         }
         lastHandX = x;
         lastHandY = y;
       } else {
         handDetected = false;
-        statusEl.textContent = 'Arahkan tangan ke kamera';
+        statusEl.textContent = 'Arahkan jari telunjuk ke kamera';
         statusEl.className = '';
         // Soft return to center
-        targetRotationY *= 0.92;
-        targetRotationX *= 0.92;
+        targetRotationY *= 0.88;
+        targetRotationX *= 0.88;
       }
     }
 
@@ -559,9 +557,9 @@
       const t = clock.getElapsedTime();
       const dt = clock.getDelta();
 
-      // Smooth lerp rotasi
-      currentRotationY += (targetRotationY - currentRotationY) * 0.08;
-      currentRotationX += (targetRotationX - currentRotationX) * 0.08;
+      // Smooth lerp rotasi — lebih responsif (nilai lebih besar = lebih cepat ikut)
+      currentRotationY += (targetRotationY - currentRotationY) * 0.14;
+      currentRotationX += (targetRotationX - currentRotationX) * 0.14;
 
       // Rotasi seluruh galeri
       photoMeshes.forEach((mesh) => {

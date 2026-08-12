@@ -203,16 +203,15 @@
 
   <div id="ui">
     <div id="title">Kenangan Kita</div>
-    <div id="subtitle">Gerakkan jari telunjuk untuk berinteraksi</div>
+    <div id="subtitle">Geser jari telunjuk untuk ganti foto</div>
   </div>
 
   <div id="hint">
     <h2>Arahkan jari telunjuk ke kamera</h2>
     <p>
-      Gerakkan <strong>jari telunjuk</strong> kiri-kanan / atas-bawah<br>
-      untuk memutar galeri foto.<br><br>
-      <strong>Geser cepat</strong> ke kiri/kanan<br>
-      untuk mengganti foto.
+      <strong>Geser jari telunjuk</strong> ke kiri atau kanan<br>
+      untuk pindah ke foto berikutnya.<br><br>
+      Setiap foto akan <strong>berhenti di depan</strong>.
     </p>
   </div>
 
@@ -389,9 +388,11 @@
         const geometry = new THREE.PlaneGeometry(1.8, 1.2);
         const material = new THREE.MeshStandardMaterial({
           color: 0xffffff,
-          roughness: 0.4,
-          metalness: 0.1,
-          side: THREE.DoubleSide
+          roughness: 0.35,
+          metalness: 0.05,
+          side: THREE.DoubleSide,   // terlihat dari depan & belakang
+          transparent: true,
+          opacity: 0.55
         });
 
         const mesh = new THREE.Mesh(geometry, material);
@@ -428,21 +429,29 @@
         scene.add(mesh);
         photoMeshes.push(mesh);
 
-        // Load texture
+        // Load texture — terlihat dari depan & belakang (DoubleSide)
         loader.load(
           url,
           (tex) => {
             tex.minFilter = THREE.LinearFilter;
             material.map = tex;
+            material.side = THREE.DoubleSide; // depan + belakang
+            material.transparent = true;
+            material.opacity = i === 0 ? 1.0 : 0.55;
             material.needsUpdate = true;
           },
           undefined,
           () => {
-            // fallback color if fail
             material.color.set(0x3a2a32);
+            material.side = THREE.DoubleSide;
           }
         );
       });
+
+      // Set posisi awal: foto pertama di depan
+      targetRotationY = 0;
+      currentRotationY = 0;
+      photoMeshes[0].scale.setScalar(1.18);
     }
 
     // Dekorasi abstrak ringan (ring / orbit)
@@ -498,7 +507,7 @@
         const y = tip.y; // 0..1
 
         handDetected = true;
-        statusEl.textContent = 'Jari telunjuk terdeteksi • Gerakkan untuk kontrol';
+        statusEl.textContent = 'Jari telunjuk terdeteksi • Geser untuk ganti foto';
         statusEl.className = 'ready';
 
         if (!hintHidden) {
@@ -506,23 +515,19 @@
           hintHidden = true;
         }
 
-        // Mapping lebih responsif (lebih sensitif)
-        // x: 0 (kanan) → 1 (kiri) karena mirror webcam
-        const mappedX = (0.5 - x) * 2.4; // -1.2 .. 1.2  → lebih lebar
-        const mappedY = (0.5 - y) * 1.4; // lebih responsif vertikal
+        // Vertical tilt tetap lembut dari posisi Y jari
+        const mappedY = (0.5 - y) * 1.2;
+        targetRotationX = mappedY * 0.7;
 
-        targetRotationY = mappedX * 2.2;  // horizontal lebih cepat
-        targetRotationX = mappedY * 0.9;  // vertikal lebih responsif
-
-        // Deteksi swipe lebih sensitif (pakai ujung jari)
+        // Horizontal: deteksi swipe untuk pindah foto (snap per foto)
         const dx = x - lastHandX;
         if (swipeCooldown <= 0) {
-          if (dx > 0.08) {          // threshold lebih rendah = lebih mudah
-            changePhoto(1);
-            swipeCooldown = 450;
-          } else if (dx < -0.08) {
-            changePhoto(-1);
-            swipeCooldown = 450;
+          if (dx > 0.07) {
+            changePhoto(1);   // geser ke kiri (mirror) → foto berikutnya
+            swipeCooldown = 500;
+          } else if (dx < -0.07) {
+            changePhoto(-1);  // geser ke kanan → foto sebelumnya
+            swipeCooldown = 500;
           }
         }
         lastHandX = x;
@@ -531,21 +536,25 @@
         handDetected = false;
         statusEl.textContent = 'Arahkan jari telunjuk ke kamera';
         statusEl.className = '';
-        // Soft return to center
-        targetRotationY *= 0.88;
-        targetRotationX *= 0.88;
+        // Soft return tilt
+        targetRotationX *= 0.9;
       }
     }
 
     function changePhoto(dir) {
       currentPhotoIndex = (currentPhotoIndex + dir + photos.length) % photos.length;
-      // Highlight foto aktif dengan sedikit scale + glow (via material)
+
+      // Target sudut supaya foto aktif menghadap kamera (depan)
+      // Setiap foto punya sudut 2π / n
+      const step = (Math.PI * 2) / photos.length;
+      targetRotationY = -currentPhotoIndex * step;
+
+      // Highlight foto aktif
       photoMeshes.forEach((m, i) => {
         const isActive = i === currentPhotoIndex;
-        m.scale.setScalar(isActive ? 1.12 : 1.0);
-        // Soft opacity via material (jika ada)
+        m.scale.setScalar(isActive ? 1.18 : 0.92);
         if (m.material) {
-          m.material.opacity = isActive ? 1 : 0.75;
+          m.material.opacity = isActive ? 1.0 : 0.55;
           m.material.transparent = true;
         }
       });
@@ -557,18 +566,25 @@
       const t = clock.getElapsedTime();
       const dt = clock.getDelta();
 
-      // Smooth lerp rotasi — lebih responsif (nilai lebih besar = lebih cepat ikut)
-      currentRotationY += (targetRotationY - currentRotationY) * 0.14;
-      currentRotationX += (targetRotationX - currentRotationX) * 0.14;
+      // Smooth lerp ke posisi snap (setiap foto berhenti di depan)
+      // Gunakan shortest path agar rotasi tidak muter jauh
+      let diffY = targetRotationY - currentRotationY;
+      // Normalisasi ke -π .. π supaya ambil jalur terpendek
+      while (diffY > Math.PI) diffY -= Math.PI * 2;
+      while (diffY < -Math.PI) diffY += Math.PI * 2;
+      currentRotationY += diffY * 0.12;
+      currentRotationX += (targetRotationX - currentRotationX) * 0.12;
 
-      // Rotasi seluruh galeri
+      // Rotasi seluruh galeri — foto aktif selalu di depan
       photoMeshes.forEach((mesh) => {
         const baseAngle = mesh.userData.angle + currentRotationY;
         const radius = 3.2;
         mesh.position.x = Math.sin(baseAngle) * radius;
         mesh.position.z = Math.cos(baseAngle) * radius;
-        mesh.position.y = Math.sin(t * 0.4 + mesh.userData.index) * 0.08 + currentRotationX * 0.4;
-        mesh.lookAt(0, mesh.position.y * 0.3, 0);
+        mesh.position.y = Math.sin(t * 0.35 + mesh.userData.index) * 0.06 + currentRotationX * 0.35;
+
+        // Hadapkan ke pusat (depan & belakang tetap terlihat karena DoubleSide)
+        mesh.lookAt(0, mesh.position.y * 0.2, 0);
       });
 
       // Partikel pelan berputar

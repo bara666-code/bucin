@@ -252,6 +252,115 @@
       z-index: 16;
     }
 
+    #msg-btn {
+      position: fixed;
+      top: max(24px, env(safe-area-inset-top) + 8px);
+      right: max(90px, env(safe-area-inset-right) + 82px);
+      z-index: 16;
+    }
+
+    /* ========== MESSAGE PANEL ========== */
+    #msg-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.92);
+      width: min(92vw, 380px);
+      background: rgba(18, 12, 22, 0.94);
+      border: 1px solid rgba(255, 200, 220, 0.22);
+      border-radius: 16px;
+      padding: 28px 24px;
+      z-index: 25;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s, transform 0.35s, visibility 0.35s;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      pointer-events: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    #msg-panel.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #msg-panel h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #f5e6f0;
+      text-align: center;
+    }
+
+    #msg-panel label {
+      display: block;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+
+    #msg-panel textarea,
+    #msg-panel input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,200,220,0.18);
+      border-radius: 10px;
+      color: #e8dce8;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      padding: 12px 14px;
+      outline: none;
+      line-height: 1.5;
+    }
+
+    #msg-panel textarea {
+      height: 100px;
+      resize: none;
+    }
+
+    #msg-panel textarea:focus,
+    #msg-panel input[type="text"]:focus {
+      border-color: rgba(255,200,220,0.45);
+    }
+
+    .msg-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+
+    .msg-actions button {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    #msg-cancel {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    #msg-save {
+      background: rgba(255, 180, 200, 0.22);
+      color: #f5e6f0;
+      border: 1px solid rgba(255,200,220,0.3);
+    }
+
+    #msg-save:hover { background: rgba(255, 180, 200, 0.35); }
+
     /* ========== FLOATING MESSAGE (3D TEXT OVERLAY) ========== */
     #floating-msg {
       position: fixed;
@@ -400,6 +509,7 @@
 
   <div id="gesture-label">—</div>
 
+  <button class="ctrl-btn" id="msg-btn">Pesan</button>
   <button class="ctrl-btn" id="music-btn">Musik</button>
 
   <div id="bg-hearts"></div>
@@ -407,6 +517,18 @@
   <div id="floating-msg">
     <div class="msg-text" id="msg-text-content">Untukmu yang selalu ada</div>
     <div class="msg-from">— ours</div>
+  </div>
+
+  <div id="msg-panel">
+    <h3>Pesan Cinta</h3>
+    <label for="msg-input">Pesan</label>
+    <textarea id="msg-input" maxlength="180" placeholder="Tulis pesan yang tampil di tengah ruang..."></textarea>
+    <label for="msg-from-input">Dari</label>
+    <input type="text" id="msg-from-input" maxlength="40" placeholder="— ours" />
+    <div class="msg-actions">
+      <button id="msg-cancel">Batal</button>
+      <button id="msg-save">Simpan</button>
+    </div>
   </div>
 
   <div id="webcam-wrap">
@@ -433,7 +555,7 @@
       // "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600",
       // "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600",
       // null = pakai placeholder cantik
-      null, null, null, null, null, null, null, null
+      https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true, null, null, null, null, null, null, null
     ];
 
     // ===================== CONFIG =====================
@@ -1298,6 +1420,37 @@
 
     // Music
     document.getElementById('music-btn').addEventListener('click', toggleMusic);
+
+    // Message panel
+    document.getElementById('msg-btn').addEventListener('click', () => {
+      document.getElementById('msg-input').value = document.getElementById('msg-text-content').textContent;
+      const fromEl = document.querySelector('#floating-msg .msg-from');
+      document.getElementById('msg-from-input').value = fromEl ? fromEl.textContent : LOVE_FROM;
+      document.getElementById('msg-panel').classList.add('open');
+    });
+
+    document.getElementById('msg-cancel').addEventListener('click', () => {
+      document.getElementById('msg-panel').classList.remove('open');
+    });
+
+    document.getElementById('msg-save').addEventListener('click', () => {
+      const val = document.getElementById('msg-input').value.trim() || LOVE_MESSAGE;
+      const from = document.getElementById('msg-from-input').value.trim() || LOVE_FROM;
+      document.getElementById('msg-text-content').textContent = val;
+      const fromEl = document.querySelector('#floating-msg .msg-from');
+      if (fromEl) fromEl.textContent = from;
+      document.getElementById('msg-panel').classList.remove('open');
+      floatingMsgVisible = true;
+      document.getElementById('floating-msg').classList.add('visible');
+    });
+
+    document.getElementById('msg-panel').addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', (e) => {
+      const panel = document.getElementById('msg-panel');
+      if (panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'msg-btn') {
+        panel.classList.remove('open');
+      }
+    });
 
     // ===================== BOOT =====================
     function spawnBgHearts() {

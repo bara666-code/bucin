@@ -555,25 +555,24 @@
         lastHandX = x;
         lastHandY = y;
 
-        // Abaikan noise kecil
-        if (Math.abs(dx) > 0.004) {
-          swipeAccum += dx;
+        // Lebih sensitif: noise filter lebih longgar + gerakan diperkuat
+        if (Math.abs(dx) > 0.002) {
+          swipeAccum += dx * 1.5;
         } else {
-          // Jari hampir diam → pelan-pelan reset akumulasi
-          swipeAccum *= 0.7;
+          swipeAccum *= 0.75;
         }
 
-        // Trigger ganti foto — cooldown 2 detik
-        const SWIPE_THRESHOLD = 0.10;
+        // Threshold rendah = lebih mudah swap foto (cooldown 1 detik)
+        const SWIPE_THRESHOLD = 0.04;
         if (swipeCooldown <= 0) {
           if (swipeAccum > SWIPE_THRESHOLD) {
-            changePhoto(1);   // geser ke kiri (mirror) → next
+            changePhoto(1);
             swipeAccum = 0;
-            swipeCooldown = 2000; // 2 detik
+            swipeCooldown = 1000; // 1 detik
           } else if (swipeAccum < -SWIPE_THRESHOLD) {
-            changePhoto(-1);  // geser ke kanan → prev
+            changePhoto(-1);
             swipeAccum = 0;
-            swipeCooldown = 2000; // 2 detik
+            swipeCooldown = 1000; // 1 detik
           }
         }
       } else {

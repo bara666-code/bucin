@@ -544,19 +544,40 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
   <script>
-    // ===================== CUSTOMIZE (ubah di sini saja) =====================
-    // Pesan yang tampil di tengah ruang
+    // ============================================================
+    //  ✏️  UBAH FOTO & PESAN DI SINI SAJA
+    // ============================================================
+    //
+    //  CARA GANTI FOTO:
+    //  1. Simpan foto di folder yang sama dengan index.html
+    //     contoh nama: foto1.jpg, foto2.jpg, foto3.png
+    //  2. Tulis nama file di dalam tanda kutip di bawah
+    //  3. Maksimal 8 foto
+    //
+    //  Contoh:
+    //    "foto1.jpg",
+    //    "foto2.png",
+    //    "https://link-gambar.com/foto.jpg",
+    //
+    //  Tulis null jika ingin placeholder (bukan foto asli)
+    // ============================================================
+
+    const PHOTO_URLS = [
+      null,          // https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true
+      null,          // Foto 2
+      null,          // Foto 3
+      null,          // Foto 4
+      null,          // Foto 5
+      null,          // Foto 6
+      null,          // Foto 7
+      null           // Foto 8
+    ];
+
+    // Pesan di tengah layar (bisa juga diubah lewat tombol "Pesan" di web)
     const LOVE_MESSAGE = "Untukmu yang selalu ada";
     const LOVE_FROM = "— ours";
 
-    // Daftar foto (isi dengan URL gambar atau biarkan kosong untuk placeholder)
-    // Contoh: "https://example.com/foto1.jpg" atau path lokal "./foto1.jpg"
-    const PHOTO_URLS = [
-      // "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600",
-      // "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600",
-      // null = pakai placeholder cantik
-      https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true, null, null, null, null, null, null, null
-    ];
+    // ============================================================
 
     // ===================== CONFIG =====================
     const CONFIG = {

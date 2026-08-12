@@ -193,6 +193,164 @@
       border-color: rgba(160, 230, 180, 0.5);
       color: #a0e8c0;
     }
+
+    /* Tombol kelola foto */
+    #photo-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 274px;
+      z-index: 25;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 160, 190, 0.35);
+      background: rgba(20, 12, 18, 0.75);
+      color: #f0c4d4;
+      font-size: 1.05rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+      pointer-events: auto;
+    }
+    #photo-btn:hover {
+      background: rgba(40, 22, 32, 0.9);
+      border-color: rgba(255, 180, 200, 0.6);
+      transform: scale(1.08);
+    }
+
+    /* Panel kelola foto */
+    #photo-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      width: min(420px, 92vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      background: rgba(16, 10, 14, 0.95);
+      border: 1px solid rgba(255, 160, 190, 0.25);
+      border-radius: 18px;
+      padding: 22px;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #photo-panel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    #photo-panel h3 {
+      font-weight: 400;
+      font-size: 1.05rem;
+      color: #f0c4d4;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    #photo-panel .hint-text {
+      font-size: 0.78rem;
+      color: #a88a98;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    #photo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .photo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,160,190,0.12);
+    }
+    .photo-thumb {
+      width: 56px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 6px;
+      background: #2a1a22;
+      flex-shrink: 0;
+    }
+    .photo-row span {
+      flex: 1;
+      font-size: 0.8rem;
+      color: #d0b0bc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .photo-row button {
+      border: none;
+      background: rgba(255,140,170,0.15);
+      color: #f0c4d4;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .photo-row button:hover { background: rgba(255,140,170,0.3); }
+    .photo-row button.danger {
+      background: rgba(220,80,100,0.2);
+      color: #f0a0b0;
+    }
+    .photo-row button.danger:hover { background: rgba(220,80,100,0.35); }
+    #photo-panel-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #photo-panel-actions button {
+      flex: 1;
+      min-width: 120px;
+      border: 1px solid rgba(255,160,190,0.3);
+      background: rgba(255,160,190,0.12);
+      color: #f0d0dc;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #photo-panel-actions button:hover {
+      background: rgba(255,160,190,0.25);
+    }
+    #photo-panel-close {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: transparent;
+      border: none;
+      color: #c9a0b0;
+      font-size: 1.3rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #photo-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    #photo-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #file-input { display: none; }
   </style>
 </head>
 <body>
@@ -223,8 +381,22 @@
 
   <div id="status">Menunggu kamera...</div>
 
-  <!-- Tombol musik -->
+  <!-- Tombol musik & kelola foto -->
+  <button id="photo-btn" title="Kelola foto">📷</button>
   <button id="music-btn" title="Putar / Pause musik">♪</button>
+
+  <div id="photo-overlay"></div>
+  <div id="photo-panel">
+    <button id="photo-panel-close" title="Tutup">×</button>
+    <h3>Kelola Foto</h3>
+    <p class="hint-text">Klik "Ganti" untuk upload foto dari HP/laptop. Perubahan langsung terlihat di galeri 3D.</p>
+    <div id="photo-list"></div>
+    <div id="photo-panel-actions">
+      <button id="add-photo-btn">+ Tambah foto</button>
+      <button id="close-panel-btn">Selesai</button>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept="image/*" />
 
   <div id="webcam-wrap">
     <video id="webcam" playsinline autoplay muted></video>
@@ -262,8 +434,8 @@
     //    2. Tulis nama filenya, contoh: "foto1.jpg"
     //    3. Simpan, lalu refresh keras: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)
     //    Catatan: file:// kadang diblokir browser. Lebih aman buka lewat Live Server.
-    const photos = [
-      "https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true",
+    let photos = [
+      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
       "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
       "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
       "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&q=80",
@@ -309,6 +481,12 @@
     const videoEl = document.getElementById('webcam');
     const webcamCanvas = document.getElementById('webcam-canvas');
     const webcamCtx = webcamCanvas.getContext('2d');
+    const photoBtn = document.getElementById('photo-btn');
+    const photoPanel = document.getElementById('photo-panel');
+    const photoOverlay = document.getElementById('photo-overlay');
+    const photoList = document.getElementById('photo-list');
+    const fileInput = document.getElementById('file-input');
+    let pendingReplaceIndex = -1; // -1 = tambah baru
 
     // ---- Init Three.js ----
     function initThree() {
@@ -584,7 +762,7 @@
     }
 
     function changePhoto(dir) {
-      if (isAnimating) return;
+      if (isAnimating || photos.length === 0) return;
       isAnimating = true;
       canSwipe = false;
 
@@ -600,6 +778,121 @@
         }
       });
     }
+
+    // ---- Kelola foto dari web ----
+    function openPhotoPanel() {
+      renderPhotoList();
+      photoPanel.classList.add('open');
+      photoOverlay.classList.add('open');
+    }
+    function closePhotoPanel() {
+      photoPanel.classList.remove('open');
+      photoOverlay.classList.remove('open');
+    }
+
+    function renderPhotoList() {
+      photoList.innerHTML = '';
+      photos.forEach((url, i) => {
+        const row = document.createElement('div');
+        row.className = 'photo-row';
+        const name = url.startsWith('blob:') ? 'Foto upload ' + (i + 1) :
+          (url.split('/').pop() || 'Foto ' + (i + 1)).substring(0, 28);
+        row.innerHTML =
+          '<img class="photo-thumb" src="' + url + '" alt="foto' + (i + 1) + '" />' +
+          '<span>Foto ' + (i + 1) + ' — ' + name + '</span>' +
+          '<button type="button" data-action="replace" data-i="' + i + '">Ganti</button>' +
+          '<button type="button" class="danger" data-action="remove" data-i="' + i + '">Hapus</button>';
+        photoList.appendChild(row);
+      });
+      if (photos.length === 0) {
+        photoList.innerHTML = '<p class="hint-text">Belum ada foto. Klik "+ Tambah foto".</p>';
+      }
+    }
+
+    function applyTextureToMesh(index, url) {
+      const mesh = photoMeshes[index];
+      if (!mesh || !mesh.userData.material) return;
+      loadPhotoTexture(url, mesh.userData.material, index);
+    }
+
+    function rebuildGallery() {
+      // Hapus mesh lama
+      photoMeshes.forEach((m) => {
+        scene.remove(m);
+        if (m.geometry) m.geometry.dispose();
+      });
+      photoMeshes = [];
+      currentPhotoIndex = Math.min(currentPhotoIndex, Math.max(photos.length - 1, 0));
+      currentRotationY = photos.length ? -currentPhotoIndex * ((Math.PI * 2) / photos.length) : 0;
+      if (photos.length > 0) {
+        createPhotoGallery();
+      }
+      renderPhotoList();
+    }
+
+    photoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPhotoPanel();
+    });
+    document.getElementById('photo-panel-close').addEventListener('click', closePhotoPanel);
+    document.getElementById('close-panel-btn').addEventListener('click', closePhotoPanel);
+    photoOverlay.addEventListener('click', closePhotoPanel);
+
+    document.getElementById('add-photo-btn').addEventListener('click', () => {
+      pendingReplaceIndex = -1;
+      fileInput.value = '';
+      fileInput.click();
+    });
+
+    photoList.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const i = parseInt(btn.getAttribute('data-i'), 10);
+      const action = btn.getAttribute('data-action');
+      if (action === 'replace') {
+        pendingReplaceIndex = i;
+        fileInput.value = '';
+        fileInput.click();
+      } else if (action === 'remove') {
+        if (photos.length <= 1) {
+          alert('Minimal 1 foto harus ada.');
+          return;
+        }
+        // Revoke blob URL jika perlu
+        if (photos[i] && photos[i].startsWith('blob:')) {
+          try { URL.revokeObjectURL(photos[i]); } catch (err) {}
+        }
+        photos.splice(i, 1);
+        rebuildGallery();
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Pilih file gambar (jpg, png, dll).');
+        return;
+      }
+      const objectUrl = URL.createObjectURL(file);
+
+      if (pendingReplaceIndex >= 0 && pendingReplaceIndex < photos.length) {
+        // Ganti foto existing
+        if (photos[pendingReplaceIndex].startsWith('blob:')) {
+          try { URL.revokeObjectURL(photos[pendingReplaceIndex]); } catch (err) {}
+        }
+        photos[pendingReplaceIndex] = objectUrl;
+        applyTextureToMesh(pendingReplaceIndex, objectUrl);
+        renderPhotoList();
+      } else {
+        // Tambah foto baru → rebuild posisi lingkaran
+        photos.push(objectUrl);
+        rebuildGallery();
+      }
+      pendingReplaceIndex = -1;
+      statusEl.textContent = 'Foto berhasil diubah';
+      statusEl.className = 'ready';
+    });
 
     // ---- Animation loop ----
     function animate() {

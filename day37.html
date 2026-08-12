@@ -2,1658 +2,470 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>Ours — 3D Memory Space</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kenangan 3D • Bucin Elegan</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500&display=swap');
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       overflow: hidden;
-      background: #0a0a0f;
-      font-family: 'Inter', system-ui, sans-serif;
-      color: #e8e0e8;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: none;
+      background: #0a0a12;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #e8d5e0;
     }
-
     #canvas-container {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       z-index: 1;
     }
+    canvas { display: block; width: 100%; height: 100%; }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* ========== UI OVERLAY ========== */
-    #ui {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.1rem, 3.5vw, 1.35rem);
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      color: #f5e6f0;
-      text-shadow: 0 0 24px rgba(255, 180, 210, 0.35);
-    }
-
-    .brand span {
-      font-weight: 400;
-      opacity: 0.65;
-      font-size: 0.85em;
-    }
-
-    .status {
-      font-size: 0.7rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      opacity: 0.55;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #555;
-      transition: background 0.3s, box-shadow 0.3s;
-      flex-shrink: 0;
-    }
-
-    .status-dot.active {
-      background: #a8e6cf;
-      box-shadow: 0 0 10px #a8e6cf;
-    }
-
-    .hint {
-      position: absolute;
-      bottom: max(28px, env(safe-area-inset-bottom) + 12px);
-      left: 50%;
-      transform: translateX(-50%);
-      text-align: center;
-      font-size: clamp(0.7rem, 2.2vw, 0.8rem);
-      opacity: 0.5;
-      letter-spacing: 0.03em;
-      max-width: min(92%, 420px);
-      line-height: 1.55;
-      transition: opacity 0.7s;
-      padding: 0 12px;
-    }
-
-    .hint.hidden { opacity: 0; pointer-events: none; }
-
-    /* ========== START SCREEN ========== */
-    #start-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      background: radial-gradient(ellipse at 50% 38%, #1a1220 0%, #0a0a0f 72%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 22px;
-      padding: 24px;
-      transition: opacity 0.85s ease, visibility 0.85s;
-    }
-
-    #start-screen.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .start-title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(2.4rem, 8vw, 3.6rem);
-      font-weight: 600;
-      color: #f8eef5;
-      letter-spacing: 0.03em;
-      text-align: center;
-      line-height: 1.2;
-    }
-
-    .start-sub {
-      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
-      opacity: 0.6;
-      max-width: 360px;
-      text-align: center;
-      line-height: 1.65;
-      font-weight: 300;
-    }
-
-    #start-btn {
-      pointer-events: auto;
-      margin-top: 10px;
-      padding: 14px 40px;
-      border: 1px solid rgba(255, 200, 220, 0.35);
-      background: rgba(255, 180, 200, 0.08);
-      color: #f5e6f0;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.8rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-
-    #start-btn:hover, #start-btn:active {
-      background: rgba(255, 180, 200, 0.18);
-      border-color: rgba(255, 200, 220, 0.55);
-      box-shadow: 0 0 32px rgba(255, 160, 190, 0.22);
-    }
-
-    /* ========== WEBCAM PREVIEW ========== */
+    /* Webcam preview kecil di pojok */
     #webcam-wrap {
       position: fixed;
-      bottom: max(20px, env(safe-area-inset-bottom) + 8px);
-      right: max(16px, env(safe-area-inset-right) + 8px);
-      width: clamp(100px, 22vw, 140px);
-      height: clamp(75px, 16.5vw, 105px);
+      bottom: 20px; right: 20px;
+      width: 180px; height: 135px;
       border-radius: 12px;
       overflow: hidden;
-      border: 1px solid rgba(255, 200, 220, 0.2);
-      z-index: 15;
-      opacity: 0;
-      transition: opacity 0.5s;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255, 150, 180, 0.35);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 10;
       background: #111;
     }
-
-    #webcam-wrap.visible { opacity: 0.82; }
-
-    #webcam-wrap video {
-      width: 100%;
-      height: 100%;
+    #webcam {
+      width: 100%; height: 100%;
       object-fit: cover;
       transform: scaleX(-1);
     }
+    #webcam-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      transform: scaleX(-1);
+      pointer-events: none;
+    }
 
-    /* ========== GESTURE LABEL ========== */
-    #gesture-label {
+    /* UI overlay */
+    #ui {
       position: fixed;
-      top: max(72px, env(safe-area-inset-top) + 52px);
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      pointer-events: none;
+      padding: 24px 28px;
+      background: linear-gradient(to bottom, rgba(10,10,18,0.75), transparent 120px);
+    }
+    #title {
+      font-size: 1.35rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #f0c4d4;
+      opacity: 0.95;
+    }
+    #subtitle {
+      font-size: 0.8rem;
+      color: #a88a98;
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+    #status {
+      position: fixed;
+      bottom: 24px; left: 28px;
+      font-size: 0.78rem;
+      color: #c9a0b0;
+      background: rgba(20, 12, 18, 0.7);
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,140,170,0.2);
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+    #status.ready { color: #9fe8c0; border-color: rgba(120,220,160,0.3); }
+    #status.error { color: #f0a0a0; }
+
+    /* Instruksi singkat */
+    #hint {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 15;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+    #hint h2 {
+      font-weight: 300;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+      color: #f5d0dc;
+      margin-bottom: 12px;
+    }
+    #hint p {
+      font-size: 0.95rem;
+      color: #b89aa8;
+      line-height: 1.6;
+      max-width: 360px;
+    }
+    #hint.hidden { opacity: 0; pointer-events: none; }
+
+    /* Loading */
+    #loading {
+      position: fixed; inset: 0;
+      background: #0a0a12;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100;
+      transition: opacity 0.6s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .loader {
+      width: 48px; height: 48px;
+      border: 2px solid rgba(255,160,190,0.2);
+      border-top-color: #e8a0b8;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: #c9a0b0; font-size: 0.9rem; letter-spacing: 0.05em; }
+
+    /* Pesan romantis */
+    #message-box {
+      position: fixed;
+      bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 0.68rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 12;
-      color: #d4a5c0;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      z-index: 18;
       pointer-events: none;
-      white-space: nowrap;
-    }
-
-    #gesture-label.show { opacity: 0.75; }
-
-    /* ========== CONTROL BUTTONS ========== */
-    .ctrl-btn {
-      pointer-events: auto;
-      padding: 8px 14px;
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,200,220,0.22);
-      color: #e8d0e0;
-      border-radius: 8px;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.4s, background 0.2s, border-color 0.2s;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      white-space: nowrap;
-    }
-
-    .ctrl-btn.visible { opacity: 0.85; }
-    .ctrl-btn:hover, .ctrl-btn:active {
-      background: rgba(255,180,200,0.14);
-      border-color: rgba(255,200,220,0.4);
-    }
-
-    #music-btn {
-      position: fixed;
-      top: max(24px, env(safe-area-inset-top) + 8px);
-      right: max(16px, env(safe-area-inset-right) + 8px);
-      z-index: 16;
-    }
-
-    #msg-btn {
-      position: fixed;
-      top: max(24px, env(safe-area-inset-top) + 8px);
-      right: max(90px, env(safe-area-inset-right) + 82px);
-      z-index: 16;
-    }
-
-    #foto-btn {
-      position: fixed;
-      top: max(24px, env(safe-area-inset-top) + 8px);
-      right: max(164px, env(safe-area-inset-right) + 156px);
-      z-index: 16;
-    }
-
-    @media (max-width: 520px) {
-      #foto-btn {
-        top: max(60px, env(safe-area-inset-top) + 44px);
-        right: max(16px, env(safe-area-inset-right) + 8px);
-      }
-    }
-
-    /* ========== PHOTO PANEL ========== */
-    #foto-panel {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.92);
-      width: min(94vw, 420px);
-      max-height: min(85vh, 560px);
-      overflow-y: auto;
-      background: rgba(18, 12, 22, 0.95);
-      border: 1px solid rgba(255, 200, 220, 0.22);
-      border-radius: 16px;
-      padding: 24px 20px;
-      z-index: 25;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.35s, transform 0.35s, visibility 0.35s;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      pointer-events: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-
-    #foto-panel.open {
-      opacity: 1;
-      visibility: visible;
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    #foto-panel h3 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
-      font-weight: 500;
-      margin-bottom: 6px;
-      color: #f5e6f0;
-      text-align: center;
-    }
-
-    #foto-panel .foto-hint {
-      font-size: 0.72rem;
-      opacity: 0.45;
-      text-align: center;
-      margin-bottom: 16px;
-      line-height: 1.4;
-    }
-
-    .foto-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-
-    .foto-slot {
-      aspect-ratio: 0.8;
-      border-radius: 10px;
-      border: 1px dashed rgba(255, 200, 220, 0.28);
-      background: rgba(255,255,255,0.03);
-      cursor: pointer;
-      overflow: hidden;
-      position: relative;
-      transition: border-color 0.2s, background 0.2s, transform 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .foto-slot:hover {
-      border-color: rgba(255, 200, 220, 0.55);
-      background: rgba(255, 180, 200, 0.08);
-      transform: scale(1.03);
-    }
-
-    .foto-slot.has-photo {
-      border-style: solid;
-      border-color: rgba(255, 180, 200, 0.4);
-    }
-
-    .foto-slot img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .foto-slot .slot-label {
-      font-size: 0.65rem;
-      opacity: 0.4;
-      letter-spacing: 0.05em;
-      text-align: center;
-      padding: 4px;
-      pointer-events: none;
-    }
-
-    .foto-slot .slot-remove {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.55);
-      border: none;
-      color: #ffc0d0;
-      font-size: 12px;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      z-index: 2;
-    }
-
-    .foto-slot.has-photo .slot-remove {
-      display: flex;
-    }
-
-    .foto-slot .slot-remove:hover {
-      background: rgba(180,40,60,0.7);
-      color: #fff;
-    }
-
-    #foto-file-input {
-      display: none;
-    }
-
-    .foto-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 18px;
-      justify-content: flex-end;
-    }
-
-    .foto-actions button {
-      padding: 9px 18px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border: none;
-      transition: background 0.2s;
-    }
-
-    #foto-close {
-      background: rgba(255, 180, 200, 0.22);
-      color: #f5e6f0;
-      border: 1px solid rgba(255,200,220,0.3);
-    }
-
-    #foto-close:hover { background: rgba(255, 180, 200, 0.35); }
-
-    /* ========== MESSAGE PANEL ========== */
-    #msg-panel {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.92);
-      width: min(92vw, 380px);
-      background: rgba(18, 12, 22, 0.94);
-      border: 1px solid rgba(255, 200, 220, 0.22);
-      border-radius: 16px;
-      padding: 28px 24px;
-      z-index: 25;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.35s, transform 0.35s, visibility 0.35s;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      pointer-events: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-
-    #msg-panel.open {
-      opacity: 1;
-      visibility: visible;
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    #msg-panel h3 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: #f5e6f0;
-      text-align: center;
-    }
-
-    #msg-panel label {
-      display: block;
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      opacity: 0.5;
-      margin-bottom: 6px;
-      margin-top: 12px;
-    }
-
-    #msg-panel textarea,
-    #msg-panel input[type="text"] {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,200,220,0.18);
-      border-radius: 10px;
-      color: #e8dce8;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.9rem;
-      padding: 12px 14px;
-      outline: none;
-      line-height: 1.5;
-    }
-
-    #msg-panel textarea {
-      height: 100px;
-      resize: none;
-    }
-
-    #msg-panel textarea:focus,
-    #msg-panel input[type="text"]:focus {
-      border-color: rgba(255,200,220,0.45);
-    }
-
-    .msg-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 18px;
-      justify-content: flex-end;
-    }
-
-    .msg-actions button {
-      padding: 9px 18px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      border: none;
-      transition: background 0.2s;
-    }
-
-    #msg-cancel {
-      background: transparent;
-      color: #aaa;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-
-    #msg-save {
-      background: rgba(255, 180, 200, 0.22);
-      color: #f5e6f0;
-      border: 1px solid rgba(255,200,220,0.3);
-    }
-
-    #msg-save:hover { background: rgba(255, 180, 200, 0.35); }
-
-    /* ========== FLOATING MESSAGE (3D TEXT OVERLAY) ========== */
-    #floating-msg {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 9;
-      pointer-events: none;
-      text-align: center;
-      max-width: min(88vw, 480px);
       opacity: 0;
       transition: opacity 1.2s ease;
     }
-
-    #floating-msg.visible { opacity: 1; }
-
-    #floating-msg .msg-text {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.15rem, 4.2vw, 1.7rem);
-      font-weight: 400;
-      color: rgba(255, 230, 240, 0.88);
-      line-height: 1.55;
-      text-shadow: 0 0 40px rgba(255, 160, 190, 0.35), 0 2px 12px rgba(0,0,0,0.5);
-      letter-spacing: 0.02em;
+    #message-box.show { opacity: 1; }
+    #message-text {
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: #f0d4de;
+      letter-spacing: 0.03em;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.6);
+      background: rgba(18, 10, 16, 0.55);
+      padding: 16px 22px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 160, 190, 0.18);
+      backdrop-filter: blur(10px);
+    }
+    #message-from {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #c9a0b0;
+      letter-spacing: 0.08em;
+      font-style: italic;
     }
 
-    #floating-msg .msg-from {
-      margin-top: 14px;
-      font-size: 0.72rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      opacity: 0.45;
-    }
-
-    /* ========== LOADING ========== */
-    #loading {
+    /* Tombol musik */
+    #music-btn {
       position: fixed;
-      inset: 0;
-      z-index: 30;
-      background: #0a0a0f;
+      bottom: 24px;
+      right: 220px;
+      z-index: 25;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 160, 190, 0.35);
+      background: rgba(20, 12, 18, 0.75);
+      color: #f0c4d4;
+      font-size: 1.1rem;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-      transition: opacity 0.6s;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+      pointer-events: auto;
     }
-
-    #loading.hidden { opacity: 0; pointer-events: none; }
-
-    .loader {
-      width: 32px;
-      height: 32px;
-      border: 2px solid rgba(255,200,220,0.18);
-      border-top-color: #e8b0c8;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    #music-btn:hover {
+      background: rgba(40, 22, 32, 0.9);
+      border-color: rgba(255, 180, 200, 0.6);
+      transform: scale(1.08);
     }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loading-text {
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      opacity: 0.5;
-    }
-
-    /* ========== HEART BURST ========== */
-    .heart-burst {
-      position: fixed;
-      pointer-events: none;
-      z-index: 18;
-      font-size: 18px;
-      animation: heartFly 1.5s ease-out forwards;
-      color: #f0a0c0;
-      text-shadow: 0 0 14px rgba(255,160,190,0.7);
-    }
-
-    @keyframes heartFly {
-      0% { opacity: 1; transform: translate(0,0) scale(0.5) rotate(0deg); }
-      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1.4) rotate(25deg); }
-    }
-
-    /* Continuous CSS background hearts */
-    #bg-hearts {
-      position: fixed;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      overflow: hidden;
-    }
-
-    .bg-heart {
-      position: absolute;
-      bottom: -40px;
-      color: rgba(255, 150, 190, 0.18);
-      font-size: 14px;
-      animation: bgHeartRise linear infinite;
-      text-shadow: 0 0 10px rgba(255,140,180,0.25);
-    }
-
-    @keyframes bgHeartRise {
-      0% { transform: translateY(0) translateX(0) scale(0.7); opacity: 0; }
-      10% { opacity: 0.35; }
-      90% { opacity: 0.2; }
-      100% { transform: translateY(-110vh) translateX(30px) scale(1.1); opacity: 0; }
-    }
-
-    /* Mobile tweaks */
-    @media (max-width: 600px) {
-      .top-bar { gap: 8px; }
-      .status { font-size: 0.62rem; }
-      #webcam-wrap {
-        width: 96px;
-        height: 72px;
-        bottom: max(16px, env(safe-area-inset-bottom) + 6px);
-        right: max(12px, env(safe-area-inset-right) + 6px);
-      }
+    #music-btn.playing {
+      border-color: rgba(160, 230, 180, 0.5);
+      color: #a0e8c0;
     }
   </style>
 </head>
 <body>
   <div id="loading">
     <div class="loader"></div>
-    <div class="loading-text">Menyiapkan ruang...</div>
-  </div>
-
-  <div id="start-screen">
-    <div class="start-title">Ours</div>
-    <div class="start-sub">Ruang memori 3D yang dikontrol dengan jari. Tunjuk, cubit, dan rasakan kenangan bersama.</div>
-    <button id="start-btn">Buka Kamera</button>
+    <p>Memuat kamera & model AI...</p>
   </div>
 
   <div id="ui">
-    <div class="top-bar">
-      <div class="brand">Ours <span>· memory space</span></div>
-      <div class="status">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-text">Kamera off</span>
-      </div>
-    </div>
-    <div class="hint" id="hint">
-      Telunjuk · geser ruang &nbsp;·&nbsp; Dekatkan jari ke foto lalu cubit · pindahkan &nbsp;·&nbsp; Dua jari · heart burst
-    </div>
+    <div id="title">Kenangan Kita</div>
+    <div id="subtitle">Gerakkan tangan untuk berinteraksi</div>
   </div>
 
-  <div id="gesture-label">—</div>
-
-  <button class="ctrl-btn" id="foto-btn">Foto</button>
-  <button class="ctrl-btn" id="msg-btn">Pesan</button>
-  <button class="ctrl-btn" id="music-btn">Musik</button>
-
-  <input type="file" id="foto-file-input" accept="image/*" />
-
-  <div id="bg-hearts"></div>
-
-  <div id="floating-msg">
-    <div class="msg-text" id="msg-text-content">Untukmu yang selalu ada</div>
-    <div class="msg-from">— ours</div>
+  <div id="hint">
+    <h2>Arahkan tangan ke kamera</h2>
+    <p>
+      Gerakkan tangan kiri-kanan / atas-bawah<br>
+      untuk memutar galeri foto.<br><br>
+      <strong>Geser cepat</strong> ke kiri/kanan<br>
+      untuk mengganti foto.
+    </p>
   </div>
 
-  <div id="foto-panel">
-    <h3>Ganti Foto</h3>
-    <p class="foto-hint">Klik kotak untuk pilih foto dari HP/komputer.<br>Foto langsung muncul di ruang 3D.</p>
-    <div class="foto-grid" id="foto-grid">
-      <!-- diisi oleh JS -->
-    </div>
-    <div class="foto-actions">
-      <button id="foto-close">Selesai</button>
-    </div>
+  <!-- PESAN ROMANTIS (muncul setelah loading) -->
+  <div id="message-box">
+    <div id="message-text"></div>
+    <div id="message-from"></div>
   </div>
 
-  <div id="msg-panel">
-    <h3>Pesan Cinta</h3>
-    <label for="msg-input">Pesan</label>
-    <textarea id="msg-input" maxlength="180" placeholder="Tulis pesan yang tampil di tengah ruang..."></textarea>
-    <label for="msg-from-input">Dari</label>
-    <input type="text" id="msg-from-input" maxlength="40" placeholder="— ours" />
-    <div class="msg-actions">
-      <button id="msg-cancel">Batal</button>
-      <button id="msg-save">Simpan</button>
-    </div>
-  </div>
+  <div id="status">Menunggu kamera...</div>
+
+  <!-- Tombol musik -->
+  <button id="music-btn" title="Putar / Pause musik">♪</button>
 
   <div id="webcam-wrap">
     <video id="webcam" playsinline autoplay muted></video>
+    <canvas id="webcam-canvas"></canvas>
   </div>
 
   <div id="canvas-container"></div>
 
-  <!-- Three.js r128 -->
+  <!-- Audio element (lagu background) -->
+  <audio id="bg-music" loop preload="auto">
+    <!-- 
+      GANTI LAGU DI SINI:
+      1. Download lagu soft/romantic gratis dari Pixabay Music
+      2. Atau pakai link .mp3 langsung
+      3. Contoh di bawah bisa diganti
+    -->
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Three.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <!-- MediaPipe -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
   <script>
     // ============================================================
-    //  ✏️  UBAH FOTO & PESAN DI SINI SAJA
-    // ============================================================
-    //
-    //  CARA GANTI FOTO:
-    //  1. Simpan foto di folder yang sama dengan index.html
-    //     contoh nama: foto1.jpg, foto2.jpg, foto3.png
-    //  2. Tulis nama file di dalam tanda kutip di bawah
-    //  3. Maksimal 8 foto
-    //
-    //  Contoh:
-    //    "foto1.jpg",
-    //    "foto2.png",
-    //    "https://link-gambar.com/foto.jpg",
-    //
-    //  Tulis null jika ingin placeholder (bukan foto asli)
+    //  PENGATURAN MUDAH DIUBAH
     // ============================================================
 
-    const PHOTO_URLS = [
-      https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true,          // Foto 1
-      null,          // Foto 2
-      null,          // Foto 3
-      null,          // Foto 4
-      null,          // Foto 5
-      null,          // Foto 6
-      null,          // Foto 7
-      null           // Foto 8
+    // 1. FOTO — ganti URL sesuai keinginan
+    const photos = [
+      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&q=80",
+      "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80",
+      "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&q=80",
+      "https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=800&q=80",
+      "https://images.unsplash.com/photo-1518621012118-2e4e2546b6b9?w=800&q=80",
+      "https://images.unsplash.com/photo-1494774157368-9f8b2b3d0b0b?w=800&q=80"
     ];
 
-    // Pesan di tengah layar (bisa juga diubah lewat tombol "Pesan" di web)
-    const LOVE_MESSAGE = "Untukmu yang selalu ada";
-    const LOVE_FROM = "— ours";
+    // 2. PESAN ROMANTIS — ubah teks di sini
+    const loveMessage = {
+      text: "Di antara bintang dan kenangan,<br>kau tetap jadi tempatku pulang.<br>Terima kasih sudah ada.",
+      from: "— untukmu, selalu"
+    };
+
+    // 3. LAGU — ganti URL lagu di tag <audio> di atas (atau di sini)
+    //    Bisa pakai link .mp3 apapun (Pixabay, file sendiri, dll)
 
     // ============================================================
 
-    // ===================== CONFIG =====================
-    const CONFIG = {
-      maxPhotos: 10,
-      photoSize: 1.85,
-      handSmooth: 0.2,
-      panSensitivity: 4.5,
-      scrollSensitivity: 0.04,
-      pinchThreshold: 0.07,
-      fistThreshold: 0.07,
-      openPalmThreshold: 0.09
-    };
-
-    // ===================== STATE =====================
+    // ---- State ----
     let scene, camera, renderer, clock;
-    let photos = [];
-    let particles, heartParticles;
-    let handLandmarks = null;
-    let prevHandX = 0.5, prevHandY = 0.5;
-    let targetCamX = 0, targetCamY = 0;
-    let isPinching = false;
-    let isFist = false;
-    let wasFist = false;
-    let grabbedPhoto = null;
-    let grabOffset = new THREE.Vector3();
-    let handWorldPos = new THREE.Vector3();
-    let isOpenPalm = false;
-    let scrollVel = { x: 0, y: 0 };
-    let cameraStarted = false;
-    let musicPlaying = false;
-    let audioCtx = null;
-    let musicNodes = [];
-    let lastHeartBurst = 0;
-    let floatingMsgVisible = true;
-    let fingerCursor = null;
-    let nearestPhoto = null;
-    const GRAB_RANGE = 2.8; // jarak maksimal untuk mengambil foto (lebih mudah)
+    let photoMeshes = [];
+    let currentPhotoIndex = 0;
+    let targetRotationY = 0;
+    let targetRotationX = 0;
+    let currentRotationY = 0;
+    let currentRotationX = 0;
+    let particles;
+    let handDetected = false;
+    let lastHandX = 0.5, lastHandY = 0.5;
+    let swipeCooldown = 0;
+    let hintHidden = false;
 
-    // ===================== INIT THREE =====================
+    const statusEl = document.getElementById('status');
+    const hintEl = document.getElementById('hint');
+    const messageBox = document.getElementById('message-box');
+    const messageText = document.getElementById('message-text');
+    const messageFrom = document.getElementById('message-from');
+    const musicBtn = document.getElementById('music-btn');
+    const bgMusic = document.getElementById('bg-music');
+    const loadingEl = document.getElementById('loading');
+    const videoEl = document.getElementById('webcam');
+    const webcamCanvas = document.getElementById('webcam-canvas');
+    const webcamCtx = webcamCanvas.getContext('2d');
+
+    // ---- Init Three.js ----
     function initThree() {
       const container = document.getElementById('canvas-container');
-
       scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x0a0a0f, 0.042);
+      scene.fog = new THREE.FogExp2(0x0a0a12, 0.035);
 
-      camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 80);
-      camera.position.set(0, 0, 6.8);
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 0.3, 6.5);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(0x0a0a0f, 1);
+      renderer.setClearColor(0x0a0a12, 1);
       container.appendChild(renderer.domElement);
 
-      // Lights
-      scene.add(new THREE.AmbientLight(0xffe0f0, 0.5));
+      clock = new THREE.Clock();
 
-      const p1 = new THREE.PointLight(0xffb0d0, 0.65, 28);
-      p1.position.set(2.2, 2.8, 4);
-      scene.add(p1);
+      // Soft ambient + romantic point lights
+      const ambient = new THREE.AmbientLight(0x2a1a28, 0.6);
+      scene.add(ambient);
 
-      const p2 = new THREE.PointLight(0xb0a0ff, 0.3, 22);
-      p2.position.set(-3, -1.2, 2.5);
-      scene.add(p2);
+      const light1 = new THREE.PointLight(0xff9ec0, 1.4, 20);
+      light1.position.set(3, 2, 4);
+      scene.add(light1);
 
-      const p3 = new THREE.PointLight(0xffd0e0, 0.25, 18);
-      p3.position.set(0, -2, 3);
-      scene.add(p3);
+      const light2 = new THREE.PointLight(0xa0c0ff, 0.7, 18);
+      light2.position.set(-3, -1, 3);
+      scene.add(light2);
+
+      const light3 = new THREE.PointLight(0xffd0e0, 0.5, 12);
+      light3.position.set(0, 3, -2);
+      scene.add(light3);
 
       createParticles();
-      createHeartParticles();
-      createAmbientHearts();
-      createFloatingHearts3D();
-      createGlowOrbs();
-      createFingerCursor();
-      createDefaultPhotos();
+      createPhotoGallery();
+      createSubtleDecor();
 
-      // Soft floor
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(50, 50),
-        new THREE.MeshBasicMaterial({ color: 0x07070b, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
-      );
-      plane.rotation.x = -Math.PI / 2;
-      plane.position.y = -3;
-      scene.add(plane);
-
-      clock = new THREE.Clock();
       window.addEventListener('resize', onResize);
-      window.addEventListener('orientationchange', () => setTimeout(onResize, 200));
       animate();
     }
 
-    // Soft dust / sparkle
+    // Partikel halus (bintang / debu romantis)
     function createParticles() {
-      const count = window.innerWidth < 600 ? 140 : 260;
+      const count = 600;
       const geo = new THREE.BufferGeometry();
-      const pos = new Float32Array(count * 3);
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
       for (let i = 0; i < count; i++) {
-        pos[i*3]     = (Math.random()-0.5) * 26;
-        pos[i*3+1]   = (Math.random()-0.5) * 16;
-        pos[i*3+2]   = (Math.random()-0.5) * 22 - 1;
+        positions[i * 3]     = (Math.random() - 0.5) * 18;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 12;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 14 - 2;
+
+        const t = Math.random();
+        colors[i * 3]     = 0.85 + t * 0.15;
+        colors[i * 3 + 1] = 0.55 + t * 0.25;
+        colors[i * 3 + 2] = 0.65 + t * 0.2;
       }
-      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      particles = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: 0xffd0e8, size: 0.034, transparent: true, opacity: 0.42,
-        depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
-      }));
-      scene.add(particles);
-    }
 
-    // Burst particles (triggered by fist)
-    function createHeartParticles() {
-      const count = 70;
-      const geo = new THREE.BufferGeometry();
-      const pos = new Float32Array(count * 3);
-      const vel = [];
-      for (let i = 0; i < count; i++) {
-        pos[i*3] = 0; pos[i*3+1] = -20; pos[i*3+2] = 0;
-        vel.push({ x: 0, y: 0, z: 0, life: 0 });
-      }
-      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      heartParticles = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: 0xff80b0, size: 0.09, transparent: true, opacity: 0.8,
-        depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
-      }));
-      heartParticles.userData.vel = vel;
-      scene.add(heartParticles);
-    }
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    // Continuous falling ambient hearts
-    let ambientHearts;
-    function createAmbientHearts() {
-      const count = window.innerWidth < 600 ? 35 : 55;
-      const geo = new THREE.BufferGeometry();
-      const pos = new Float32Array(count * 3);
-      const data = [];
-      for (let i = 0; i < count; i++) {
-        pos[i*3]   = (Math.random()-0.5) * 18;
-        pos[i*3+1] = Math.random() * 14 - 4;
-        pos[i*3+2] = (Math.random()-0.5) * 14;
-        data.push({
-          speed: 0.004 + Math.random() * 0.01,
-          sway: Math.random() * Math.PI * 2,
-          swaySpeed: 0.3 + Math.random() * 0.5,
-          baseX: pos[i*3]
-        });
-      }
-      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      ambientHearts = new THREE.Points(geo, new THREE.PointsMaterial({
-        color: 0xff9ac0, size: 0.07, transparent: true, opacity: 0.55,
-        depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
-      }));
-      ambientHearts.userData.data = data;
-      scene.add(ambientHearts);
-    }
-
-    // 3D heart meshes floating
-    let floatingHearts3D = [];
-    function createHeartShape() {
-      const x = 0, y = 0;
-      const shape = new THREE.Shape();
-      shape.moveTo(x + 0.25, y + 0.25);
-      shape.bezierCurveTo(x + 0.25, y + 0.25, x + 0.2, y, x, y);
-      shape.bezierCurveTo(x - 0.3, y, x - 0.3, y + 0.35, x - 0.3, y + 0.35);
-      shape.bezierCurveTo(x - 0.3, y + 0.55, x - 0.1, y + 0.77, x + 0.25, y + 0.95);
-      shape.bezierCurveTo(x + 0.6, y + 0.77, x + 0.8, y + 0.55, x + 0.8, y + 0.35);
-      shape.bezierCurveTo(x + 0.8, y + 0.35, x + 0.8, y, x + 0.5, y);
-      shape.bezierCurveTo(x + 0.35, y, x + 0.25, y + 0.25, x + 0.25, y + 0.25);
-      return shape;
-    }
-
-    function createFloatingHearts3D() {
-      const shape = createHeartShape();
-      const count = window.innerWidth < 600 ? 6 : 10;
-      for (let i = 0; i < count; i++) {
-        const geo = new THREE.ShapeGeometry(shape);
-        geo.center();
-        const mat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color().setHSL(0.95 + Math.random()*0.04, 0.55, 0.65 + Math.random()*0.1),
-          transparent: true,
-          opacity: 0.22 + Math.random() * 0.18,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        const scale = 0.25 + Math.random() * 0.45;
-        mesh.scale.set(scale, scale, scale);
-        mesh.position.set(
-          (Math.random()-0.5) * 12,
-          (Math.random()-0.5) * 7,
-          (Math.random()-0.5) * 10 - 1
-        );
-        mesh.userData = {
-          baseY: mesh.position.y,
-          phase: Math.random() * Math.PI * 2,
-          rotSpeed: (Math.random()-0.5) * 0.4,
-          floatAmp: 0.15 + Math.random() * 0.25
-        };
-        scene.add(mesh);
-        floatingHearts3D.push(mesh);
-      }
-    }
-
-    // Soft glowing orbs
-    let glowOrbs = [];
-    function createGlowOrbs() {
-      const count = window.innerWidth < 600 ? 4 : 7;
-      for (let i = 0; i < count; i++) {
-        const geo = new THREE.SphereGeometry(0.12 + Math.random()*0.18, 16, 16);
-        const mat = new THREE.MeshBasicMaterial({
-          color: 0xffb0d0,
-          transparent: true,
-          opacity: 0.12 + Math.random()*0.1,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(
-          (Math.random()-0.5) * 10,
-          (Math.random()-0.5) * 6,
-          (Math.random()-0.5) * 8
-        );
-        mesh.userData = {
-          base: mesh.position.clone(),
-          phase: Math.random() * Math.PI * 2,
-          speed: 0.2 + Math.random() * 0.35
-        };
-        scene.add(mesh);
-        glowOrbs.push(mesh);
-      }
-    }
-
-    function createFingerCursor() {
-      // Titik kecil di ujung jari telunjuk agar mudah melihat posisi
-      const geo = new THREE.SphereGeometry(0.07, 16, 16);
-      const mat = new THREE.MeshBasicMaterial({
-        color: 0xffb0d0,
+      const mat = new THREE.PointsMaterial({
+        size: 0.035,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.7,
         depthWrite: false,
         blending: THREE.AdditiveBlending
       });
-      fingerCursor = new THREE.Mesh(geo, mat);
-      fingerCursor.visible = false;
 
-      // ring luar
-      const ringGeo = new THREE.RingGeometry(0.1, 0.14, 32);
+      particles = new THREE.Points(geo, mat);
+      scene.add(particles);
+    }
+
+    // Galeri foto 3D (circular / carousel)
+    function createPhotoGallery() {
+      const radius = 3.2;
+      const loader = new THREE.TextureLoader();
+
+      photos.forEach((url, i) => {
+        const angle = (i / photos.length) * Math.PI * 2;
+        const geometry = new THREE.PlaneGeometry(1.8, 1.2);
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.4,
+          metalness: 0.1,
+          side: THREE.DoubleSide
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(
+          Math.sin(angle) * radius,
+          0,
+          Math.cos(angle) * radius
+        );
+        mesh.lookAt(0, 0, 0);
+        mesh.userData = { index: i, angle };
+
+        // Frame tipis elegan
+        const frameGeo = new THREE.PlaneGeometry(1.9, 1.3);
+        const frameMat = new THREE.MeshBasicMaterial({
+          color: 0x2a1a22,
+          side: THREE.DoubleSide
+        });
+        const frame = new THREE.Mesh(frameGeo, frameMat);
+        frame.position.z = -0.01;
+        mesh.add(frame);
+
+        // Border soft glow
+        const borderGeo = new THREE.PlaneGeometry(1.95, 1.35);
+        const borderMat = new THREE.MeshBasicMaterial({
+          color: 0xffb0c8,
+          transparent: true,
+          opacity: 0.15,
+          side: THREE.DoubleSide
+        });
+        const border = new THREE.Mesh(borderGeo, borderMat);
+        border.position.z = -0.02;
+        mesh.add(border);
+
+        scene.add(mesh);
+        photoMeshes.push(mesh);
+
+        // Load texture
+        loader.load(
+          url,
+          (tex) => {
+            tex.minFilter = THREE.LinearFilter;
+            material.map = tex;
+            material.needsUpdate = true;
+          },
+          undefined,
+          () => {
+            // fallback color if fail
+            material.color.set(0x3a2a32);
+          }
+        );
+      });
+    }
+
+    // Dekorasi abstrak ringan (ring / orbit)
+    function createSubtleDecor() {
+      // Ring horizontal
+      const ringGeo = new THREE.TorusGeometry(3.6, 0.015, 16, 100);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0xffd0e8,
+        color: 0xffa0b8,
         transparent: true,
-        opacity: 0.35,
-        side: THREE.DoubleSide,
-        depthWrite: false
+        opacity: 0.25
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
-      fingerCursor.add(ring);
-      fingerCursor.userData.ring = ring;
+      scene.add(ring);
 
-      scene.add(fingerCursor);
-    }
-
-    function triggerHeartBurst(origin) {
-      const now = performance.now();
-      if (now - lastHeartBurst < 550) return;
-      lastHeartBurst = now;
-
-      const vel = heartParticles.userData.vel;
-      const pos = heartParticles.geometry.attributes.position.array;
-      for (let i = 0; i < vel.length; i++) {
-        pos[i*3]   = origin.x + (Math.random()-0.5)*0.4;
-        pos[i*3+1] = origin.y + (Math.random()-0.5)*0.4;
-        pos[i*3+2] = origin.z + (Math.random()-0.5)*0.4;
-        const a = Math.random() * Math.PI * 2;
-        const s = 0.05 + Math.random() * 0.12;
-        vel[i].x = Math.cos(a) * s;
-        vel[i].y = 0.07 + Math.random() * 0.14;
-        vel[i].z = Math.sin(a) * s * 0.65;
-        vel[i].life = 1.4 + Math.random() * 1.0;
-      }
-      heartParticles.geometry.attributes.position.needsUpdate = true;
-
-      // DOM hearts (more)
-      for (let i = 0; i < 12; i++) {
-        const el = document.createElement('div');
-        el.className = 'heart-burst';
-        el.textContent = Math.random() > 0.4 ? '♡' : '♥';
-        el.style.left = (50 + (Math.random()-0.5)*30) + '%';
-        el.style.top  = (42 + (Math.random()-0.5)*20) + '%';
-        el.style.fontSize = (14 + Math.random()*14) + 'px';
-        el.style.color = Math.random() > 0.5 ? '#f0a0c0' : '#ff80b0';
-        el.style.setProperty('--tx', ((Math.random()-0.5)*160) + 'px');
-        el.style.setProperty('--ty', (-90 - Math.random()*140) + 'px');
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 1600);
-      }
-    }
-
-    // Auto soft heart rain occasionally
-    let lastAutoBurst = 0;
-    function maybeAutoHeartRain(t) {
-      if (t - lastAutoBurst < 4.5) return;
-      if (Math.random() > 0.35) return;
-      lastAutoBurst = t;
-      const origin = new THREE.Vector3(
-        (Math.random()-0.5) * 4,
-        -1.5 + Math.random(),
-        (Math.random()-0.5) * 3
+      // Ring miring
+      const ring2 = new THREE.Mesh(
+        new THREE.TorusGeometry(3.9, 0.01, 16, 100),
+        new THREE.MeshBasicMaterial({ color: 0xc0a0ff, transparent: true, opacity: 0.15 })
       );
-      // lighter auto burst
-      const vel = heartParticles.userData.vel;
-      const pos = heartParticles.geometry.attributes.position.array;
-      let used = 0;
-      for (let i = 0; i < vel.length && used < 18; i++) {
-        if (vel[i].life > 0.1) continue;
-        pos[i*3]   = origin.x + (Math.random()-0.5)*1.5;
-        pos[i*3+1] = origin.y;
-        pos[i*3+2] = origin.z + (Math.random()-0.5)*1.2;
-        vel[i].x = (Math.random()-0.5) * 0.03;
-        vel[i].y = 0.03 + Math.random() * 0.05;
-        vel[i].z = (Math.random()-0.5) * 0.02;
-        vel[i].life = 2 + Math.random() * 1.5;
-        used++;
-      }
-      heartParticles.geometry.attributes.position.needsUpdate = true;
-    }
-
-    // Canvas photo textures
-    const photoColors = [
-      [0x4a2a40, 0x6a4060], [0x3a2a50, 0x5a4070], [0x4a3040, 0x6a4a58],
-      [0x2a3a50, 0x4a5a70], [0x502a40, 0x704a60], [0x3a2a48, 0x5a4a68]
-    ];
-
-    function createCanvasTexture(index, label) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512; canvas.height = 640;
-      const ctx = canvas.getContext('2d');
-      const [c1, c2] = photoColors[index % photoColors.length];
-      const g = ctx.createLinearGradient(0, 0, 0, 640);
-      g.addColorStop(0, '#' + c1.toString(16).padStart(6,'0'));
-      g.addColorStop(1, '#' + c2.toString(16).padStart(6,'0'));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 512, 640);
-
-      // Soft glow center
-      const glow = ctx.createRadialGradient(256, 300, 20, 256, 300, 280);
-      glow.addColorStop(0, 'rgba(255,200,220,0.25)');
-      glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, 512, 640);
-
-      ctx.fillStyle = 'rgba(255,235,245,0.75)';
-      ctx.font = '300 26px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(label || 'memory', 256, 300);
-      ctx.fillStyle = 'rgba(255,220,235,0.45)';
-      ctx.font = '400 16px Inter, sans-serif';
-      ctx.fillText(String(index + 1), 256, 340);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter;
-      tex.needsUpdate = true;
-      return tex;
-    }
-
-    function createPhotoTexture(index, customUrl) {
-      return new Promise((resolve) => {
-        if (customUrl) {
-          const loader = new THREE.TextureLoader();
-          loader.crossOrigin = 'anonymous';
-          loader.load(customUrl, (tex) => {
-            tex.minFilter = THREE.LinearFilter;
-            resolve(tex);
-          }, undefined, () => resolve(createCanvasTexture(index)));
-        } else {
-          resolve(createCanvasTexture(index));
-        }
-      });
-    }
-
-    const PHOTO_POSITIONS = [
-      { x: -3.3, y: 0.9,  z: -1.0, ry: 0.28 },
-      { x: -1.2, y: -0.7, z:  0.5, ry: -0.12 },
-      { x:  1.5, y: 1.0,  z: -0.7, ry: -0.22 },
-      { x:  3.1, y: -0.5, z:  0.3, ry: 0.18 },
-      { x: -2.1, y: 1.7,  z:  1.6, ry: 0.38 },
-      { x:  0.4, y: -1.5, z: -1.9, ry: 0.06 },
-      { x:  2.5, y: 1.4,  z:  1.2, ry: -0.32 },
-      { x: -0.7, y: 0.3,  z:  2.3, ry: 0.12 }
-    ];
-
-    // Preview URL untuk panel UI (object URL atau null)
-    const photoPreviewUrls = new Array(8).fill(null);
-    let activeFotoSlot = -1;
-
-    async function createDefaultPhotos() {
-      try {
-        const count = PHOTO_POSITIONS.length;
-        for (let i = 0; i < count; i++) {
-          const url = (PHOTO_URLS && PHOTO_URLS[i]) ? PHOTO_URLS[i] : null;
-          if (url) photoPreviewUrls[i] = url;
-          const tex = await createPhotoTexture(i, url);
-          addPhoto(tex, PHOTO_POSITIONS[i], i);
-        }
-        console.log('Fotos loaded:', photos.length);
-      } catch (err) {
-        console.error('Gagal memuat foto:', err);
-      }
-    }
-
-    async function setPhotoAtSlot(index, url) {
-      if (index < 0 || index >= 8) return;
-      try {
-        const tex = await createPhotoTexture(index, url);
-        if (photos[index]) {
-          const mesh = photos[index].children[0];
-          if (mesh && mesh.material) {
-            if (mesh.material.map) mesh.material.map.dispose();
-            mesh.material.map = tex;
-            mesh.material.needsUpdate = true;
-          }
-        } else if (PHOTO_POSITIONS[index]) {
-          addPhoto(tex, PHOTO_POSITIONS[index], index);
-        }
-        photoPreviewUrls[index] = url;
-        updateFotoGridUI();
-      } catch (err) {
-        console.error('Gagal set foto:', err);
-      }
-    }
-
-    function addPhoto(texture, pos, slotIndex) {
-      const w = CONFIG.photoSize;
-      const h = CONFIG.photoSize / 0.8;
-      const group = new THREE.Group();
-
-      // MeshBasicMaterial = selalu terlihat (tidak tergantung cahaya)
-      const mesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(w, h),
-        new THREE.MeshBasicMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-          toneMapped: false
-        })
-      );
-      mesh.position.z = 0.01;
-      group.add(mesh);
-
-      const frame = new THREE.Mesh(
-        new THREE.PlaneGeometry(w + 0.1, h + 0.1),
-        new THREE.MeshBasicMaterial({ color: 0x1a1218, side: THREE.DoubleSide })
-      );
-      frame.position.z = 0;
-      group.add(frame);
-
-      const border = new THREE.LineSegments(
-        new THREE.EdgesGeometry(new THREE.PlaneGeometry(w + 0.08, h + 0.08)),
-        new THREE.LineBasicMaterial({ color: 0xe0b0c8, transparent: true, opacity: 0.45 })
-      );
-      border.position.z = 0.015;
-      group.add(border);
-
-      group.position.set(pos.x, pos.y, pos.z);
-      group.rotation.y = pos.ry || 0;
-      group.userData = {
-        isPhoto: true,
-        slotIndex: typeof slotIndex === 'number' ? slotIndex : photos.length,
-        baseY: pos.y,
-        floatPhase: Math.random() * Math.PI * 2,
-        originalPos: group.position.clone()
-      };
-
-      scene.add(group);
-
-      // Selalu push berurutan saat init; ganti jika slot sudah ada
-      if (typeof slotIndex === 'number' && photos[slotIndex]) {
-        scene.remove(photos[slotIndex]);
-        photos[slotIndex] = group;
-      } else if (typeof slotIndex === 'number' && slotIndex === photos.length) {
-        photos.push(group);
-      } else if (typeof slotIndex === 'number') {
-        photos[slotIndex] = group;
-      } else {
-        photos.push(group);
-      }
-      return group;
-    }
-
-    // ===================== HAND TRACKING =====================
-    async function startCamera() {
-      const video = document.getElementById('webcam');
-      const hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-      });
-
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.62,
-        minTrackingConfidence: 0.52
-      });
-
-      hands.onResults(onHandResults);
-
-      const cam = new Camera(video, {
-        onFrame: async () => { await hands.send({ image: video }); },
-        width: 640,
-        height: 480
-      });
-
-      await cam.start();
-      cameraStarted = true;
-
-      document.getElementById('webcam-wrap').classList.add('visible');
-      document.getElementById('status-dot').classList.add('active');
-      document.getElementById('status-text').textContent = 'Jari terdeteksi';
-      document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.add('visible'));
-      document.getElementById('floating-msg').classList.add('visible');
-
-      setTimeout(() => document.getElementById('hint').classList.add('hidden'), 10000);
-    }
-
-    function onHandResults(results) {
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        handLandmarks = results.multiHandLandmarks[0];
-        document.getElementById('status-text').textContent = 'Jari aktif';
-        processGestures(handLandmarks);
-      } else {
-        handLandmarks = null;
-        isPinching = false;
-        isFist = false;
-        nearestPhoto = null;
-        if (grabbedPhoto) {
-          grabbedPhoto.userData.baseY = grabbedPhoto.position.y;
-          grabbedPhoto = null;
-        }
-        if (fingerCursor) fingerCursor.visible = false;
-        // reset highlight
-        photos.forEach(p => {
-          p.scale.set(1, 1, 1);
-          if (p.children[2] && p.children[2].material) {
-            p.children[2].material.opacity = 0.32;
-            p.children[2].material.color.set(0xd0a0b8);
-          }
-        });
-        document.getElementById('status-text').textContent = 'Mencari jari...';
-        document.getElementById('gesture-label').classList.remove('show');
-      }
-    }
-
-    function processGestures(landmarks) {
-      // Landmark jari
-      const thumbTip = landmarks[4];
-      const indexTip = landmarks[8];
-      const middleTip = landmarks[12];
-      const ringTip = landmarks[16];
-      const pinkyTip = landmarks[20];
-      const indexPip = landmarks[6];
-      const indexMcp = landmarks[5];
-      const middlePip = landmarks[10];
-      const middleMcp = landmarks[9];
-      const ringPip = landmarks[14];
-      const pinkyPip = landmarks[18];
-
-      // Posisi kontrol utama = ujung jari telunjuk (lebih presisi)
-      const fingerX = 1 - indexTip.x;
-      const fingerY = indexTip.y;
-
-      prevHandX += (fingerX - prevHandX) * CONFIG.handSmooth;
-      prevHandY += (fingerY - prevHandY) * CONFIG.handSmooth;
-
-      handWorldPos.set(
-        (prevHandX - 0.5) * 8.5,
-        -(prevHandY - 0.5) * 5.8,
-        1.6
-      );
-
-      // --- Deteksi jari terentang (tip lebih tinggi dari pip di image = y lebih kecil) ---
-      const indexUp  = (indexPip.y  - indexTip.y)  > 0.04;
-      const middleUp = (middlePip.y - middleTip.y) > 0.04;
-      const ringUp   = (ringPip.y   - ringTip.y)   > 0.04;
-      const pinkyUp  = (pinkyPip.y  - pinkyTip.y)  > 0.04;
-
-      // Cubit: jempol + telunjuk dekat
-      const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
-      const wasPinching = isPinching;
-      isPinching = pinchDist < CONFIG.pinchThreshold;
-
-      // Pointing: hanya telunjuk terangkat, jari lain menekuk
-      const isPointing = indexUp && !middleUp && !ringUp && !pinkyUp && !isPinching;
-
-      // Two fingers (peace / V): telunjuk + jari tengah
-      const isTwoFingers = indexUp && middleUp && !ringUp && !pinkyUp && !isPinching;
-
-      // Fist: semua jari menekuk
-      wasFist = isFist;
-      isFist = !indexUp && !middleUp && !ringUp && !pinkyUp && pinchDist > 0.06;
-
-      // Cari foto terdekat dari ujung jari (selalu, agar mudah diambil)
-      nearestPhoto = null;
-      let minD = GRAB_RANGE;
-      photos.forEach(p => {
-        if (!p || p === grabbedPhoto) return;
-        const d = p.position.distanceTo(handWorldPos);
-        if (d < minD) {
-          minD = d;
-          nearestPhoto = p;
-        }
-      });
-
-      // Highlight foto terdekat (sedikit membesar + border lebih terang)
-      photos.forEach(p => {
-        if (!p) return;
-        const isNear = p === nearestPhoto && !grabbedPhoto;
-        const isHeld = p === grabbedPhoto;
-        const targetScale = isHeld ? 1.12 : (isNear ? 1.06 : 1.0);
-        p.scale.x += (targetScale - p.scale.x) * 0.15;
-        p.scale.y += (targetScale - p.scale.y) * 0.15;
-        p.scale.z += (targetScale - p.scale.z) * 0.15;
-
-        // border glow
-        if (p.children[2] && p.children[2].material) {
-          p.children[2].material.opacity = isHeld ? 0.85 : (isNear ? 0.65 : 0.32);
-          p.children[2].material.color.set(isHeld || isNear ? 0xffc0d8 : 0xd0a0b8);
-        }
-      });
-
-      // Finger cursor
-      if (fingerCursor) {
-        fingerCursor.visible = true;
-        fingerCursor.position.copy(handWorldPos);
-        const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.15;
-        fingerCursor.scale.setScalar(isPinching ? 1.35 : pulse);
-        fingerCursor.material.opacity = isPinching ? 0.85 : 0.5;
-        if (fingerCursor.userData.ring) {
-          fingerCursor.userData.ring.material.opacity = isPinching ? 0.7 : 0.3;
-        }
-      }
-
-      // Label
-      const label = document.getElementById('gesture-label');
-      if (isPinching && grabbedPhoto) {
-        label.textContent = 'Menggeser foto';
-        label.classList.add('show');
-      } else if (isPinching && nearestPhoto) {
-        label.textContent = 'Cubit · ambil foto';
-        label.classList.add('show');
-      } else if (isPinching) {
-        label.textContent = 'Cubit · dekatkan ke foto';
-        label.classList.add('show');
-      } else if (nearestPhoto && !isPointing) {
-        label.textContent = 'Dekat foto · cubit untuk ambil';
-        label.classList.add('show');
-      } else if (isTwoFingers) {
-        label.textContent = 'Dua jari · heart burst';
-        label.classList.add('show');
-      } else if (isPointing) {
-        label.textContent = 'Telunjuk · geser ruang';
-        label.classList.add('show');
-      } else if (isFist) {
-        label.textContent = 'Kepalan · heart burst';
-        label.classList.add('show');
-      } else {
-        label.classList.remove('show');
-      }
-
-      // Grab: cubit saat dekat foto (range lebih besar = lebih mudah)
-      if (isPinching && !wasPinching) {
-        if (nearestPhoto) {
-          grabbedPhoto = nearestPhoto;
-          // offset kecil supaya foto "nempel" di jari, tidak loncat
-          grabOffset.set(0, 0, 0);
-          nearestPhoto = null;
-        }
-      }
-
-      // Lepas foto
-      if (!isPinching && wasPinching && grabbedPhoto) {
-        // simpan posisi Y baru supaya float lanjut dari sini
-        grabbedPhoto.userData.baseY = grabbedPhoto.position.y;
-        grabbedPhoto = null;
-      }
-
-      // Gerakkan foto yang dipegang — langsung ikuti jari (mudah)
-      if (grabbedPhoto && isPinching) {
-        grabbedPhoto.position.x += (handWorldPos.x - grabbedPhoto.position.x) * 0.35;
-        grabbedPhoto.position.y += (handWorldPos.y - grabbedPhoto.position.y) * 0.35;
-        grabbedPhoto.position.z += (handWorldPos.z * 0.5 - grabbedPhoto.position.z) * 0.25;
-      }
-
-      // Heart burst: dua jari ATAU kepalan
-      if ((isTwoFingers || isFist) && !wasFist && !isPinching) {
-        // hindari spam: hanya saat transisi ke gesture
-        if (isFist && !wasFist) triggerHeartBurst(handWorldPos.clone());
-      }
-      // two fingers trigger sekali saat masuk gesture
-      if (isTwoFingers && !window._wasTwoFingers) {
-        triggerHeartBurst(handWorldPos.clone());
-      }
-      window._wasTwoFingers = isTwoFingers;
-
-      // Geser ruang dengan jari telunjuk (pointing)
-      if (isPointing && !isPinching) {
-        const deltaX = prevHandX - 0.5;
-        const deltaY = prevHandY - 0.5;
-        targetCamX = -deltaX * CONFIG.panSensitivity;
-        targetCamY =  deltaY * CONFIG.panSensitivity * 0.72;
-        scrollVel.x += deltaX * CONFIG.scrollSensitivity;
-        scrollVel.y += deltaY * CONFIG.scrollSensitivity;
-      } else {
-        scrollVel.x *= 0.91;
-        scrollVel.y *= 0.91;
-      }
-
-      targetCamX += scrollVel.x;
-      targetCamY -= scrollVel.y;
-      targetCamX = Math.max(-5.8, Math.min(5.8, targetCamX));
-      targetCamY = Math.max(-3.4, Math.min(3.4, targetCamY));
-    }
-
-    // ===================== SOFT MUSIC (Web Audio) =====================
-    function initMusic() {
-      if (audioCtx) return;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-      // Soft ambient pad using oscillators
-      const notes = [130.81, 164.81, 196.00, 246.94]; // C3 E3 G3 B3
-      notes.forEach((freq, i) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        const filter = audioCtx.createBiquadFilter();
-
-        osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-        osc.frequency.value = freq;
-
-        filter.type = 'lowpass';
-        filter.frequency.value = 600;
-        filter.Q.value = 0.7;
-
-        gain.gain.value = 0;
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start();
-        musicNodes.push({ osc, gain, baseFreq: freq });
-      });
-    }
-
-    function toggleMusic(forcePlay) {
-      initMusic();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      if (typeof forcePlay === 'boolean') {
-        musicPlaying = forcePlay;
-      } else {
-        musicPlaying = !musicPlaying;
-      }
-
-      const btn = document.getElementById('music-btn');
-      btn.textContent = musicPlaying ? 'Musik ✓' : 'Musik';
-
-      musicNodes.forEach((n, i) => {
-        const target = musicPlaying ? (0.035 + i * 0.008) : 0;
-        n.gain.gain.cancelScheduledValues(audioCtx.currentTime);
-        n.gain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 1.8);
-      });
-
-      // Gentle LFO movement when playing
-      if (musicPlaying) {
-        // avoid stacking multiple LFOs
-        musicNodes.forEach(n => {
-          if (n.lfo) { try { n.lfo.stop(); } catch(e){} n.lfo = null; }
-        });
-        musicNodes.forEach((n, i) => {
-          const lfo = audioCtx.createOscillator();
-          const lfoGain = audioCtx.createGain();
-          lfo.frequency.value = 0.08 + i * 0.03;
-          lfoGain.gain.value = 4 + i * 2;
-          lfo.connect(lfoGain);
-          lfoGain.connect(n.osc.frequency);
-          lfo.start();
-          n.lfo = lfo;
-        });
-      } else {
-        musicNodes.forEach(n => {
-          if (n.lfo) { try { n.lfo.stop(); } catch(e){} n.lfo = null; }
-          n.osc.frequency.setValueAtTime(n.baseFreq, audioCtx.currentTime);
-        });
-      }
-    }
-
-    // ===================== ANIMATION =====================
-    function animate() {
-      requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-
-      // Camera
-      camera.position.x += (targetCamX - camera.position.x) * 0.065;
-      camera.position.y += (targetCamY - camera.position.y) * 0.065;
-      camera.lookAt(camera.position.x * 0.28, camera.position.y * 0.18, 0);
-
-      // Photos float + selalu menghadap kamera
-      photos.forEach((p) => {
-        if (!p) return;
-        if (p !== grabbedPhoto) {
-          const phase = p.userData.floatPhase;
-          p.position.y = p.userData.baseY + Math.sin(t * 0.5 + phase) * 0.13;
-          // Billboard: foto selalu menghadap kamera (terlihat jelas)
-          p.quaternion.copy(camera.quaternion);
-          p.rotateZ(Math.sin(t * 0.28 + phase) * 0.028);
-        } else {
-          // Saat digeser tetap menghadap kamera
-          p.quaternion.copy(camera.quaternion);
-        }
-      });
-
-      // Dust particles
-      if (particles) {
-        particles.rotation.y = t * 0.012;
-        const pos = particles.geometry.attributes.position.array;
-        for (let i = 0; i < pos.length; i += 3) {
-          pos[i+1] += Math.sin(t * 0.35 + i * 0.1) * 0.0007;
-        }
-        particles.geometry.attributes.position.needsUpdate = true;
-      }
-
-      // Burst heart particles
-      if (heartParticles) {
-        const pos = heartParticles.geometry.attributes.position.array;
-        const vel = heartParticles.userData.vel;
-        let anyAlive = false;
-        for (let i = 0; i < vel.length; i++) {
-          if (vel[i].life > 0) {
-            anyAlive = true;
-            pos[i*3]   += vel[i].x;
-            pos[i*3+1] += vel[i].y;
-            pos[i*3+2] += vel[i].z;
-            vel[i].y -= 0.0014;
-            vel[i].life -= 0.016;
-          } else {
-            pos[i*3+1] = -25;
-          }
-        }
-        if (anyAlive) heartParticles.geometry.attributes.position.needsUpdate = true;
-      }
-
-      // Ambient falling hearts
-      if (ambientHearts) {
-        const pos = ambientHearts.geometry.attributes.position.array;
-        const data = ambientHearts.userData.data;
-        for (let i = 0; i < data.length; i++) {
-          pos[i*3+1] -= data[i].speed;
-          pos[i*3] = data[i].baseX + Math.sin(t * data[i].swaySpeed + data[i].sway) * 0.35;
-          if (pos[i*3+1] < -5) {
-            pos[i*3+1] = 6 + Math.random() * 3;
-            data[i].baseX = (Math.random()-0.5) * 18;
-            pos[i*3] = data[i].baseX;
-            pos[i*3+2] = (Math.random()-0.5) * 14;
-          }
-        }
-        ambientHearts.geometry.attributes.position.needsUpdate = true;
-      }
-
-      // 3D floating heart meshes
-      floatingHearts3D.forEach((h) => {
-        const u = h.userData;
-        h.position.y = u.baseY + Math.sin(t * 0.45 + u.phase) * u.floatAmp;
-        h.rotation.z = Math.sin(t * 0.3 + u.phase) * 0.25;
-        h.rotation.y += u.rotSpeed * 0.01;
-        h.material.opacity = 0.18 + Math.sin(t * 0.7 + u.phase) * 0.1;
-      });
-
-      // Glow orbs drift
-      glowOrbs.forEach((o) => {
-        const u = o.userData;
-        o.position.x = u.base.x + Math.sin(t * u.speed + u.phase) * 0.8;
-        o.position.y = u.base.y + Math.cos(t * u.speed * 0.8 + u.phase) * 0.5;
-        o.position.z = u.base.z + Math.sin(t * u.speed * 0.6 + u.phase) * 0.6;
-        const s = 1 + Math.sin(t * 1.2 + u.phase) * 0.25;
-        o.scale.set(s, s, s);
-        o.material.opacity = 0.1 + Math.sin(t * 0.9 + u.phase) * 0.06;
-      });
-
-      // Occasional auto heart rain
-      maybeAutoHeartRain(t);
-
-      // Soft pulse on floating message
-      const fm = document.getElementById('floating-msg');
-      if (floatingMsgVisible) {
-        const base = musicPlaying ? 0.78 : 0.7;
-        fm.style.opacity = base + Math.sin(t * 0.55) * 0.14;
-      }
-
-      renderer.render(scene, camera);
+      ring2.rotation.x = Math.PI / 2.4;
+      ring2.rotation.y = 0.3;
+      scene.add(ring2);
     }
 
     function onResize() {
@@ -1662,156 +474,197 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // ===================== UI EVENTS =====================
-    document.getElementById('start-btn').addEventListener('click', async () => {
-      document.getElementById('start-screen').classList.add('hidden');
-      // Auto-play soft music on first user interaction (browser policy)
-      try { toggleMusic(true); } catch (e) {}
-      try {
-        await startCamera();
-      } catch (err) {
-        console.error(err);
-        document.getElementById('status-text').textContent = 'Izin kamera ditolak';
-        alert('Mohon izinkan akses kamera untuk menggunakan fitur jari.');
+    // ---- Hand Tracking ----
+    function onHandResults(results) {
+      // Draw landmarks di preview webcam
+      webcamCanvas.width = videoEl.videoWidth;
+      webcamCanvas.height = videoEl.videoHeight;
+      webcamCtx.save();
+      webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(webcamCtx, landmarks, HAND_CONNECTIONS, { color: '#ff9eb8', lineWidth: 2 });
+          drawLandmarks(webcamCtx, landmarks, { color: '#ffffff', lineWidth: 1, radius: 2 });
+        }
       }
-    });
+      webcamCtx.restore();
 
-    // Music
-    document.getElementById('music-btn').addEventListener('click', toggleMusic);
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        // Gunakan wrist (0) atau middle of palm (9) untuk stabilitas
+        const palm = landmarks[9]; // middle finger base ≈ center palm
+        const x = palm.x; // 0..1 (kanan ke kiri karena mirrored)
+        const y = palm.y; // 0..1
 
-    // ========== FOTO PANEL ==========
-    function updateFotoGridUI() {
-      const grid = document.getElementById('foto-grid');
-      if (!grid) return;
-      grid.innerHTML = '';
-      for (let i = 0; i < 8; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'foto-slot' + (photoPreviewUrls[i] ? ' has-photo' : '');
-        slot.dataset.index = i;
+        handDetected = true;
+        statusEl.textContent = 'Tangan terdeteksi • Gerakkan untuk kontrol';
+        statusEl.className = 'ready';
 
-        if (photoPreviewUrls[i]) {
-          const img = document.createElement('img');
-          img.src = photoPreviewUrls[i];
-          img.alt = 'Foto ' + (i + 1);
-          slot.appendChild(img);
-
-          const rm = document.createElement('button');
-          rm.className = 'slot-remove';
-          rm.type = 'button';
-          rm.textContent = '×';
-          rm.title = 'Hapus foto';
-          rm.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            photoPreviewUrls[i] = null;
-            const tex = await createPhotoTexture(i, null);
-            if (photos[i] && photos[i].children[0]) {
-              const mesh = photos[i].children[0];
-              if (mesh.material.map) mesh.material.map.dispose();
-              mesh.material.map = tex;
-              mesh.material.needsUpdate = true;
-            }
-            updateFotoGridUI();
-          });
-          slot.appendChild(rm);
-        } else {
-          const lab = document.createElement('div');
-          lab.className = 'slot-label';
-          lab.textContent = 'Foto ' + (i + 1) + '\n+';
-          slot.appendChild(lab);
+        if (!hintHidden) {
+          hintEl.classList.add('hidden');
+          hintHidden = true;
         }
 
-        slot.addEventListener('click', () => {
-          activeFotoSlot = i;
-          document.getElementById('foto-file-input').click();
-        });
+        // Map posisi tangan ke rotasi galeri
+        // x: 0 (kanan) → 1 (kiri) karena mirror
+        const mappedX = (0.5 - x) * 2; // -1 .. 1
+        const mappedY = (0.5 - y) * 2;
 
-        grid.appendChild(slot);
+        targetRotationY = mappedX * 1.8; // horizontal
+        targetRotationX = mappedY * 0.6; // vertical (lebih lembut)
+
+        // Deteksi swipe (kecepatan horizontal)
+        const dx = x - lastHandX;
+        const now = performance.now();
+        if (swipeCooldown <= 0) {
+          if (dx > 0.12) {
+            // geser ke kiri (karena mirror) → next photo
+            changePhoto(1);
+            swipeCooldown = 600;
+          } else if (dx < -0.12) {
+            // geser ke kanan → prev photo
+            changePhoto(-1);
+            swipeCooldown = 600;
+          }
+        }
+        lastHandX = x;
+        lastHandY = y;
+      } else {
+        handDetected = false;
+        statusEl.textContent = 'Arahkan tangan ke kamera';
+        statusEl.className = '';
+        // Soft return to center
+        targetRotationY *= 0.92;
+        targetRotationX *= 0.92;
       }
     }
 
-    document.getElementById('foto-btn').addEventListener('click', () => {
-      updateFotoGridUI();
-      document.getElementById('foto-panel').classList.add('open');
-    });
-
-    document.getElementById('foto-close').addEventListener('click', () => {
-      document.getElementById('foto-panel').classList.remove('open');
-    });
-
-    document.getElementById('foto-file-input').addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file || activeFotoSlot < 0) return;
-      const url = URL.createObjectURL(file);
-      await setPhotoAtSlot(activeFotoSlot, url);
-      e.target.value = '';
-      activeFotoSlot = -1;
-    });
-
-    document.getElementById('foto-panel').addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('click', (e) => {
-      const panel = document.getElementById('foto-panel');
-      if (panel && panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'foto-btn') {
-        panel.classList.remove('open');
-      }
-    });
-
-    // Message panel
-    document.getElementById('msg-btn').addEventListener('click', () => {
-      document.getElementById('msg-input').value = document.getElementById('msg-text-content').textContent;
-      const fromEl = document.querySelector('#floating-msg .msg-from');
-      document.getElementById('msg-from-input').value = fromEl ? fromEl.textContent : LOVE_FROM;
-      document.getElementById('msg-panel').classList.add('open');
-    });
-
-    document.getElementById('msg-cancel').addEventListener('click', () => {
-      document.getElementById('msg-panel').classList.remove('open');
-    });
-
-    document.getElementById('msg-save').addEventListener('click', () => {
-      const val = document.getElementById('msg-input').value.trim() || LOVE_MESSAGE;
-      const from = document.getElementById('msg-from-input').value.trim() || LOVE_FROM;
-      document.getElementById('msg-text-content').textContent = val;
-      const fromEl = document.querySelector('#floating-msg .msg-from');
-      if (fromEl) fromEl.textContent = from;
-      document.getElementById('msg-panel').classList.remove('open');
-      floatingMsgVisible = true;
-      document.getElementById('floating-msg').classList.add('visible');
-    });
-
-    document.getElementById('msg-panel').addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('click', (e) => {
-      const panel = document.getElementById('msg-panel');
-      if (panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'msg-btn') {
-        panel.classList.remove('open');
-      }
-    });
-
-    // ===================== BOOT =====================
-    function spawnBgHearts() {
-      const container = document.getElementById('bg-hearts');
-      const n = window.innerWidth < 600 ? 12 : 20;
-      for (let i = 0; i < n; i++) {
-        const el = document.createElement('div');
-        el.className = 'bg-heart';
-        el.textContent = Math.random() > 0.3 ? '♡' : '♥';
-        el.style.left = Math.random() * 100 + '%';
-        el.style.fontSize = (10 + Math.random() * 16) + 'px';
-        el.style.animationDuration = (10 + Math.random() * 14) + 's';
-        el.style.animationDelay = (Math.random() * 12) + 's';
-        container.appendChild(el);
-      }
+    function changePhoto(dir) {
+      currentPhotoIndex = (currentPhotoIndex + dir + photos.length) % photos.length;
+      // Highlight foto aktif dengan sedikit scale + glow (via material)
+      photoMeshes.forEach((m, i) => {
+        const isActive = i === currentPhotoIndex;
+        m.scale.setScalar(isActive ? 1.12 : 1.0);
+        // Soft opacity via material (jika ada)
+        if (m.material) {
+          m.material.opacity = isActive ? 1 : 0.75;
+          m.material.transparent = true;
+        }
+      });
     }
 
-    window.addEventListener('load', () => {
-      // Terapkan pesan dari codingan
-      document.getElementById('msg-text-content').textContent = LOVE_MESSAGE;
-      const fromEl = document.querySelector('#floating-msg .msg-from');
-      if (fromEl) fromEl.textContent = LOVE_FROM;
+    // ---- Animation loop ----
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      const dt = clock.getDelta();
 
-      spawnBgHearts();
+      // Smooth lerp rotasi
+      currentRotationY += (targetRotationY - currentRotationY) * 0.08;
+      currentRotationX += (targetRotationX - currentRotationX) * 0.08;
+
+      // Rotasi seluruh galeri
+      photoMeshes.forEach((mesh) => {
+        const baseAngle = mesh.userData.angle + currentRotationY;
+        const radius = 3.2;
+        mesh.position.x = Math.sin(baseAngle) * radius;
+        mesh.position.z = Math.cos(baseAngle) * radius;
+        mesh.position.y = Math.sin(t * 0.4 + mesh.userData.index) * 0.08 + currentRotationX * 0.4;
+        mesh.lookAt(0, mesh.position.y * 0.3, 0);
+      });
+
+      // Partikel pelan berputar
+      if (particles) {
+        particles.rotation.y = t * 0.03;
+        particles.rotation.x = Math.sin(t * 0.1) * 0.05;
+      }
+
+      // Camera subtle breathe
+      camera.position.y = 0.3 + Math.sin(t * 0.25) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      if (swipeCooldown > 0) swipeCooldown -= dt * 1000;
+
+      renderer.render(scene, camera);
+    }
+
+    // ---- Start MediaPipe + Camera ----
+    async function start() {
       initThree();
-      setTimeout(() => document.getElementById('loading').classList.add('hidden'), 500);
+
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults(onHandResults);
+
+      const cameraUtils = new Camera(videoEl, {
+        onFrame: async () => {
+          await hands.send({ image: videoEl });
+        },
+        width: 640,
+        height: 480
+      });
+
+      try {
+        await cameraUtils.start();
+        loadingEl.classList.add('hidden');
+        statusEl.textContent = 'Kamera siap • Arahkan tangan';
+
+        // Tampilkan pesan romantis
+        messageText.innerHTML = loveMessage.text;
+        messageFrom.textContent = loveMessage.from;
+        setTimeout(() => {
+          messageBox.classList.add('show');
+        }, 900);
+
+        // Auto hide hint after 6s even if no hand
+        setTimeout(() => {
+          if (!hintHidden) {
+            hintEl.classList.add('hidden');
+            hintHidden = true;
+          }
+        }, 7000);
+      } catch (err) {
+        console.error(err);
+        loadingEl.innerHTML = '<p style="color:#f0a0a0">Gagal akses kamera.<br>Pastikan izin kamera diizinkan.</p>';
+        statusEl.textContent = 'Error kamera';
+        statusEl.className = 'error';
+      }
+    }
+
+    // ---- Musik controls ----
+    let isPlaying = false;
+    musicBtn.addEventListener('click', async () => {
+      try {
+        if (isPlaying) {
+          bgMusic.pause();
+          musicBtn.textContent = '♪';
+          musicBtn.classList.remove('playing');
+          isPlaying = false;
+        } else {
+          // Volume lembut
+          bgMusic.volume = 0.45;
+          await bgMusic.play();
+          musicBtn.textContent = '❚❚';
+          musicBtn.classList.add('playing');
+          isPlaying = true;
+        }
+      } catch (e) {
+        console.warn('Musik tidak bisa diputar otomatis:', e);
+        statusEl.textContent = 'Klik lagi tombol musik';
+      }
     });
+
+    // Jalankan
+    start();
   </script>
 </body>
 </html>

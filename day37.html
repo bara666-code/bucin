@@ -563,14 +563,18 @@
           swipeAccum *= 0.7;
         }
 
-        // Trigger ganti foto — TANPA cooldown, bisa digeser terus-menerus
+        // Trigger ganti foto — cooldown 2 detik
         const SWIPE_THRESHOLD = 0.10;
-        if (swipeAccum > SWIPE_THRESHOLD) {
-          changePhoto(1);   // geser ke kiri (mirror) → next
-          swipeAccum = 0;
-        } else if (swipeAccum < -SWIPE_THRESHOLD) {
-          changePhoto(-1);  // geser ke kanan → prev
-          swipeAccum = 0;
+        if (swipeCooldown <= 0) {
+          if (swipeAccum > SWIPE_THRESHOLD) {
+            changePhoto(1);   // geser ke kiri (mirror) → next
+            swipeAccum = 0;
+            swipeCooldown = 2000; // 2 detik
+          } else if (swipeAccum < -SWIPE_THRESHOLD) {
+            changePhoto(-1);  // geser ke kanan → prev
+            swipeAccum = 0;
+            swipeCooldown = 2000; // 2 detik
+          }
         }
       } else {
         handDetected = false;

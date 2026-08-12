@@ -555,24 +555,24 @@
         lastHandX = x;
         lastHandY = y;
 
-        // Lebih sensitif: noise filter lebih longgar + gerakan diperkuat
+        // Deteksi geser — pindah satu-satu secara perlahan
         if (Math.abs(dx) > 0.002) {
           swipeAccum += dx * 1.5;
         } else {
-          swipeAccum *= 0.75;
+          swipeAccum *= 0.6;
         }
 
-        // Threshold rendah = lebih mudah swap foto (cooldown 1 detik)
         const SWIPE_THRESHOLD = 0.04;
-        if (swipeCooldown <= 0) {
+        // Hanya bisa ganti foto jika animasi sebelumnya sudah hampir selesai
+        if (window._canSwipe !== false) {
           if (swipeAccum > SWIPE_THRESHOLD) {
             changePhoto(1);
             swipeAccum = 0;
-            swipeCooldown = 1000; // 1 detik
+            window._canSwipe = false;
           } else if (swipeAccum < -SWIPE_THRESHOLD) {
             changePhoto(-1);
             swipeAccum = 0;
-            swipeCooldown = 1000; // 1 detik
+            window._canSwipe = false;
           }
         }
       } else {
@@ -613,16 +613,20 @@
       const t = clock.getElapsedTime();
       const dt = clock.getDelta();
 
-      // Hitung target sudut dari index foto (selalu akurat, tidak drift)
+      // Hitung target sudut dari index foto
       const step = (Math.PI * 2) / photos.length;
       const desiredY = -currentPhotoIndex * step;
 
-      // Shortest path rotation
+      // Rotasi perlahan (nilai kecil = lebih lambat & halus)
       let diffY = desiredY - currentRotationY;
       while (diffY > Math.PI) diffY -= Math.PI * 2;
       while (diffY < -Math.PI) diffY += Math.PI * 2;
-      currentRotationY += diffY * 0.14;
-      currentRotationX += (targetRotationX - currentRotationX) * 0.12;
+      currentRotationY += diffY * 0.045; // perlahan pindah satu per satu
+      currentRotationX += (targetRotationX - currentRotationX) * 0.1;
+
+      // Izinkan swipe berikutnya hanya jika sudah hampir sampai di foto
+      const almostThere = Math.abs(diffY) < 0.12;
+      window._canSwipe = almostThere;
 
       // Posisikan setiap foto di lingkaran
       photoMeshes.forEach((mesh) => {

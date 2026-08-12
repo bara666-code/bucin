@@ -259,6 +259,171 @@
       z-index: 16;
     }
 
+    #foto-btn {
+      position: fixed;
+      top: max(24px, env(safe-area-inset-top) + 8px);
+      right: max(164px, env(safe-area-inset-right) + 156px);
+      z-index: 16;
+    }
+
+    @media (max-width: 520px) {
+      #foto-btn {
+        top: max(60px, env(safe-area-inset-top) + 44px);
+        right: max(16px, env(safe-area-inset-right) + 8px);
+      }
+    }
+
+    /* ========== PHOTO PANEL ========== */
+    #foto-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.92);
+      width: min(94vw, 420px);
+      max-height: min(85vh, 560px);
+      overflow-y: auto;
+      background: rgba(18, 12, 22, 0.95);
+      border: 1px solid rgba(255, 200, 220, 0.22);
+      border-radius: 16px;
+      padding: 24px 20px;
+      z-index: 25;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s, transform 0.35s, visibility 0.35s;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      pointer-events: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    #foto-panel.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #foto-panel h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #f5e6f0;
+      text-align: center;
+    }
+
+    #foto-panel .foto-hint {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .foto-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .foto-slot {
+      aspect-ratio: 0.8;
+      border-radius: 10px;
+      border: 1px dashed rgba(255, 200, 220, 0.28);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .foto-slot:hover {
+      border-color: rgba(255, 200, 220, 0.55);
+      background: rgba(255, 180, 200, 0.08);
+      transform: scale(1.03);
+    }
+
+    .foto-slot.has-photo {
+      border-style: solid;
+      border-color: rgba(255, 180, 200, 0.4);
+    }
+
+    .foto-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .foto-slot .slot-label {
+      font-size: 0.65rem;
+      opacity: 0.4;
+      letter-spacing: 0.05em;
+      text-align: center;
+      padding: 4px;
+      pointer-events: none;
+    }
+
+    .foto-slot .slot-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      border: none;
+      color: #ffc0d0;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      z-index: 2;
+    }
+
+    .foto-slot.has-photo .slot-remove {
+      display: flex;
+    }
+
+    .foto-slot .slot-remove:hover {
+      background: rgba(180,40,60,0.7);
+      color: #fff;
+    }
+
+    #foto-file-input {
+      display: none;
+    }
+
+    .foto-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+
+    .foto-actions button {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    #foto-close {
+      background: rgba(255, 180, 200, 0.22);
+      color: #f5e6f0;
+      border: 1px solid rgba(255,200,220,0.3);
+    }
+
+    #foto-close:hover { background: rgba(255, 180, 200, 0.35); }
+
     /* ========== MESSAGE PANEL ========== */
     #msg-panel {
       position: fixed;
@@ -509,14 +674,28 @@
 
   <div id="gesture-label">—</div>
 
+  <button class="ctrl-btn" id="foto-btn">Foto</button>
   <button class="ctrl-btn" id="msg-btn">Pesan</button>
   <button class="ctrl-btn" id="music-btn">Musik</button>
+
+  <input type="file" id="foto-file-input" accept="image/*" />
 
   <div id="bg-hearts"></div>
 
   <div id="floating-msg">
     <div class="msg-text" id="msg-text-content">Untukmu yang selalu ada</div>
     <div class="msg-from">— ours</div>
+  </div>
+
+  <div id="foto-panel">
+    <h3>Ganti Foto</h3>
+    <p class="foto-hint">Klik kotak untuk pilih foto dari HP/komputer.<br>Foto langsung muncul di ruang 3D.</p>
+    <div class="foto-grid" id="foto-grid">
+      <!-- diisi oleh JS -->
+    </div>
+    <div class="foto-actions">
+      <button id="foto-close">Selesai</button>
+    </div>
   </div>
 
   <div id="msg-panel">
@@ -563,7 +742,7 @@
     // ============================================================
 
     const PHOTO_URLS = [
-      null,          // https://github.com/bara666-code/haikal/blob/main/bc.jpg?raw=true
+      null,          // Foto 1
       null,          // Foto 2
       null,          // Foto 3
       null,          // Foto 4
@@ -957,26 +1136,49 @@
       });
     }
 
+    const PHOTO_POSITIONS = [
+      { x: -3.3, y: 0.9,  z: -1.0, ry: 0.28 },
+      { x: -1.2, y: -0.7, z:  0.5, ry: -0.12 },
+      { x:  1.5, y: 1.0,  z: -0.7, ry: -0.22 },
+      { x:  3.1, y: -0.5, z:  0.3, ry: 0.18 },
+      { x: -2.1, y: 1.7,  z:  1.6, ry: 0.38 },
+      { x:  0.4, y: -1.5, z: -1.9, ry: 0.06 },
+      { x:  2.5, y: 1.4,  z:  1.2, ry: -0.32 },
+      { x: -0.7, y: 0.3,  z:  2.3, ry: 0.12 }
+    ];
+
+    // Preview URL untuk panel UI (object URL atau null)
+    const photoPreviewUrls = new Array(8).fill(null);
+    let activeFotoSlot = -1;
+
     async function createDefaultPhotos() {
-      const positions = [
-        { x: -3.3, y: 0.9,  z: -1.0, ry: 0.28 },
-        { x: -1.2, y: -0.7, z:  0.5, ry: -0.12 },
-        { x:  1.5, y: 1.0,  z: -0.7, ry: -0.22 },
-        { x:  3.1, y: -0.5, z:  0.3, ry: 0.18 },
-        { x: -2.1, y: 1.7,  z:  1.6, ry: 0.38 },
-        { x:  0.4, y: -1.5, z: -1.9, ry: 0.06 },
-        { x:  2.5, y: 1.4,  z:  1.2, ry: -0.32 },
-        { x: -0.7, y: 0.3,  z:  2.3, ry: 0.12 }
-      ];
-      const count = Math.min(positions.length, PHOTO_URLS.length || positions.length);
+      const count = Math.min(PHOTO_POSITIONS.length, PHOTO_URLS.length || PHOTO_POSITIONS.length);
       for (let i = 0; i < count; i++) {
         const url = PHOTO_URLS[i] || null;
+        if (url) photoPreviewUrls[i] = url;
         const tex = await createPhotoTexture(i, url);
-        addPhoto(tex, positions[i]);
+        addPhoto(tex, PHOTO_POSITIONS[i], i);
       }
     }
 
-    function addPhoto(texture, pos) {
+    async function setPhotoAtSlot(index, url) {
+      if (index < 0 || index >= 8) return;
+      const tex = await createPhotoTexture(index, url);
+      if (photos[index]) {
+        const mesh = photos[index].children[0];
+        if (mesh && mesh.material) {
+          if (mesh.material.map) mesh.material.map.dispose();
+          mesh.material.map = tex;
+          mesh.material.needsUpdate = true;
+        }
+      } else if (PHOTO_POSITIONS[index]) {
+        addPhoto(tex, PHOTO_POSITIONS[index], index);
+      }
+      photoPreviewUrls[index] = url;
+      updateFotoGridUI();
+    }
+
+    function addPhoto(texture, pos, slotIndex) {
       const w = CONFIG.photoSize;
       const h = CONFIG.photoSize / 0.8;
       const group = new THREE.Group();
@@ -1005,13 +1207,18 @@
       group.rotation.y = pos.ry || 0;
       group.userData = {
         isPhoto: true,
+        slotIndex: typeof slotIndex === 'number' ? slotIndex : photos.length,
         baseY: pos.y,
         floatPhase: Math.random() * Math.PI * 2,
         originalPos: group.position.clone()
       };
 
       scene.add(group);
-      photos.push(group);
+      if (typeof slotIndex === 'number' && slotIndex < photos.length) {
+        photos[slotIndex] = group;
+      } else {
+        photos.push(group);
+      }
       return group;
     }
 
@@ -1441,6 +1648,82 @@
 
     // Music
     document.getElementById('music-btn').addEventListener('click', toggleMusic);
+
+    // ========== FOTO PANEL ==========
+    function updateFotoGridUI() {
+      const grid = document.getElementById('foto-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'foto-slot' + (photoPreviewUrls[i] ? ' has-photo' : '');
+        slot.dataset.index = i;
+
+        if (photoPreviewUrls[i]) {
+          const img = document.createElement('img');
+          img.src = photoPreviewUrls[i];
+          img.alt = 'Foto ' + (i + 1);
+          slot.appendChild(img);
+
+          const rm = document.createElement('button');
+          rm.className = 'slot-remove';
+          rm.type = 'button';
+          rm.textContent = '×';
+          rm.title = 'Hapus foto';
+          rm.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            photoPreviewUrls[i] = null;
+            const tex = await createPhotoTexture(i, null);
+            if (photos[i] && photos[i].children[0]) {
+              const mesh = photos[i].children[0];
+              if (mesh.material.map) mesh.material.map.dispose();
+              mesh.material.map = tex;
+              mesh.material.needsUpdate = true;
+            }
+            updateFotoGridUI();
+          });
+          slot.appendChild(rm);
+        } else {
+          const lab = document.createElement('div');
+          lab.className = 'slot-label';
+          lab.textContent = 'Foto ' + (i + 1) + '\n+';
+          slot.appendChild(lab);
+        }
+
+        slot.addEventListener('click', () => {
+          activeFotoSlot = i;
+          document.getElementById('foto-file-input').click();
+        });
+
+        grid.appendChild(slot);
+      }
+    }
+
+    document.getElementById('foto-btn').addEventListener('click', () => {
+      updateFotoGridUI();
+      document.getElementById('foto-panel').classList.add('open');
+    });
+
+    document.getElementById('foto-close').addEventListener('click', () => {
+      document.getElementById('foto-panel').classList.remove('open');
+    });
+
+    document.getElementById('foto-file-input').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file || activeFotoSlot < 0) return;
+      const url = URL.createObjectURL(file);
+      await setPhotoAtSlot(activeFotoSlot, url);
+      e.target.value = '';
+      activeFotoSlot = -1;
+    });
+
+    document.getElementById('foto-panel').addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', (e) => {
+      const panel = document.getElementById('foto-panel');
+      if (panel && panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'foto-btn') {
+        panel.classList.remove('open');
+      }
+    });
 
     // Message panel
     document.getElementById('msg-btn').addEventListener('click', () => {
